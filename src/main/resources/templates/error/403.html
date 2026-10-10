@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Access denied &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p class="eyebrow">Error 403</p>
+    <h1>You don't have access to this page</h1>
+    <p>Your account isn't allowed to view this page.</p>
+    <p><a class="button" th:href="@{/}">Return to the home page</a></p>
+</main>
+</body>
+</html>

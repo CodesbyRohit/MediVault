@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Dashboard &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header">
+        <p class="eyebrow">Dashboard</p>
+        <h1 th:text="|Welcome, ${fullName}|">Welcome, Patient</h1>
+    </div>
+
+    <div class="card-grid">
+        <section class="card" aria-labelledby="count-title">
+            <h2 id="count-title">Your records</h2>
+            <p class="stat" th:text="${recordCount}">0</p>
+            <p class="muted" th:text="${recordCount == 1} ? 'medical record stored' : 'medical records stored'">
+                medical records stored</p>
+        </section>
+
+        <section class="card" aria-labelledby="recent-title">
+            <h2 id="recent-title">Recent records</h2>
+            <ul class="record-list" th:if="${!recentRecords.isEmpty()}">
+                <li th:each="record : ${recentRecords}">
+                    <a th:href="@{/records/{id}(id=${record.id})}" th:text="${record.title}">Record title</a>
+                    <span class="record-meta">
+                        <span th:text="${record.recordType.displayName}">Type</span> &middot;
+                        <time th:datetime="${record.recordDate}"
+                              th:text="${#temporals.format(record.recordDate, 'd MMM yyyy')}">1 Jan 2026</time>
+                    </span>
+                </li>
+            </ul>
+            <p th:if="${recentRecords.isEmpty()}">You don't have any medical records yet.</p>
+        </section>
+
+        <section class="card" aria-labelledby="next-title">
+            <h2 id="next-title">What's next</h2>
+            <p><a th:href="@{/records}">View all your records</a></p>
+            <p class="muted">Adding records and uploading PDF reports will arrive in a future version.</p>
+        </section>
+    </div>
+</main>
+</body>
+</html>

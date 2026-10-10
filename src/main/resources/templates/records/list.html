@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>My records &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header">
+        <p class="eyebrow">Medical records</p>
+        <h1>My records</h1>
+        <p class="muted">Only you can see these records.</p>
+    </div>
+
+    <table class="table" th:if="${!records.isEmpty()}">
+        <caption th:text="|${records.size()} ${records.size() == 1 ? 'record' : 'records'}, newest first|">
+            Records, newest first
+        </caption>
+        <thead>
+        <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Type</th>
+            <th scope="col">Date</th>
+            <th scope="col">Provider</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="record : ${records}">
+            <td data-label="Title">
+                <a th:href="@{/records/{id}(id=${record.id})}" th:text="${record.title}">Record title</a>
+            </td>
+            <td data-label="Type"><span class="badge" th:text="${record.recordType.displayName}">Type</span></td>
+            <td data-label="Date">
+                <time th:datetime="${record.recordDate}"
+                      th:text="${#temporals.format(record.recordDate, 'd MMM yyyy')}">1 Jan 2026</time>
+            </td>
+            <td data-label="Provider" th:text="${record.providerName} ?: 'Not recorded'">Provider</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="empty-state" th:if="${records.isEmpty()}">
+        <h2>No records yet</h2>
+        <p>You don't have any medical records yet. Adding records will be available in a future version.</p>
+    </div>
+</main>
+</body>
+</html>

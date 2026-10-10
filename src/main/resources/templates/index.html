@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>MediVault &middot; Your medical records, organised and private</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="container hero-inner">
+            <p class="eyebrow">Personal health records</p>
+            <h1 id="hero-title">Your medical records, organised and private.</h1>
+            <p class="lead">
+                Lab reports, prescriptions and scan reports end up scattered across paper files, phones and clinics.
+                MediVault gives you one secure place to keep track of them, and only you can see your records.
+            </p>
+            <div class="actions" sec:authorize="isAnonymous()">
+                <a class="button" th:href="@{/register}">Create your free account</a>
+                <a class="button button-secondary" th:href="@{/login}">Log in</a>
+            </div>
+            <div class="actions" sec:authorize="hasRole('PATIENT')">
+                <a class="button" th:href="@{/dashboard}">Go to your dashboard</a>
+            </div>
+            <div class="actions" sec:authorize="hasRole('ADMIN')">
+                <a class="button" th:href="@{/admin}">Open the user list</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="container section" aria-labelledby="features-title">
+        <h2 id="features-title">Why MediVault</h2>
+        <ul class="card-grid" role="list">
+            <li class="card">
+                <h3>One organised place</h3>
+                <p>See your records by title, type, date and provider, newest first.</p>
+            </li>
+            <li class="card">
+                <h3>Private by default</h3>
+                <p>Every record belongs to one account. Other patients and administrators cannot open it.</p>
+            </li>
+            <li class="card">
+                <h3>Secure sign-in</h3>
+                <p>Passwords are stored only as strong one-way hashes, and every form is protected against forgery.</p>
+            </li>
+        </ul>
+    </section>
+
+    <section class="container section" aria-labelledby="how-title">
+        <h2 id="how-title">How it works</h2>
+        <ol class="steps">
+            <li><strong>Create an account</strong> with your name, email and a password.</li>
+            <li><strong>Log in</strong> to reach your personal dashboard.</li>
+            <li><strong>Review your records</strong>, visible only to you.</li>
+        </ol>
+        <p class="notice">
+            <strong>Coming later:</strong> adding records and uploading PDF reports. This version shows the secure
+            account and records foundation.
+        </p>
+    </section>
+</main>
+</body>
+</html>

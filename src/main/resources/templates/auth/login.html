@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Log in &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <h1>Log in</h1>
+
+    <div class="alert alert-error" role="alert" th:if="${param.error}">
+        Invalid email or password.
+    </div>
+    <div class="alert alert-success" role="status" th:if="${param.logout}">
+        You have been logged out.
+    </div>
+    <div class="alert alert-success" role="status" th:if="${param.registered}">
+        Registration successful. Please log in.
+    </div>
+
+    <form class="form" th:action="@{/login}" method="post">
+        <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="username" required
+                   spellcheck="false" autocapitalize="none">
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="button button-block">Log in</button>
+    </form>
+
+    <p class="form-footer">New to MediVault? <a th:href="@{/register}">Create an account</a></p>
+</main>
+</body>
+</html>

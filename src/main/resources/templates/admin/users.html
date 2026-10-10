@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Users &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container">
+    <div class="page-header">
+        <p class="eyebrow">Administration</p>
+        <h1>Users</h1>
+        <p class="muted">Read-only account list. Administrators cannot see medical record content.</p>
+    </div>
+
+    <table class="table" th:if="${!users.isEmpty()}">
+        <caption th:text="|${users.size()} ${users.size() == 1 ? 'account' : 'accounts'}|">Accounts</caption>
+        <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="account : ${users}">
+            <td data-label="Name" th:text="${account.fullName}">Name</td>
+            <td data-label="Email" th:text="${account.email}">email@example.test</td>
+            <td data-label="Role"><span class="badge" th:text="${account.role.name() == 'ADMIN'} ? 'Admin' : 'Patient'">Patient</span></td>
+            <td data-label="Status" th:text="${account.enabled} ? 'Active' : 'Disabled'">Active</td>
+            <td data-label="Created">
+                <time th:datetime="${account.createdOn}"
+                      th:text="${#temporals.format(account.createdOn, 'd MMM yyyy')}">1 Jan 2026</time>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="empty-state" th:if="${users.isEmpty()}">
+        <p>No accounts yet.</p>
+    </div>
+</main>
+</body>
+</html>

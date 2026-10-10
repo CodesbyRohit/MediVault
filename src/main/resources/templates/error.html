@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Something went wrong &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p class="eyebrow" th:text="${status != null} ? |Error ${status}| : 'Error'">Error</p>
+    <h1>Something went wrong</h1>
+    <p>We couldn't complete your request. Please go back and try again.</p>
+    <p><a class="button" th:href="@{/}">Return to the home page</a></p>
+</main>
+</body>
+</html>

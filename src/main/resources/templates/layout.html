@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" th:fragment="layout(title, content)"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="MediVault keeps your personal medical records organised and private.">
+    <title th:replace="${title}">MediVault</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div class="demo-banner" role="note">
+    Student demo project &mdash; use <strong>fictional data only</strong>. Never enter real medical information.
+</div>
+
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" th:href="@{/}">
+            <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                <path d="M16 2 4 7v8c0 7.7 5.1 13.4 12 15 6.9-1.6 12-7.3 12-15V7L16 2z"/>
+                <path class="brand-cross" d="M14 10h4v4h4v4h-4v4h-4v-4h-4v-4h4z"/>
+            </svg>
+            <span>MediVault</span>
+        </a>
+        <nav aria-label="Main">
+            <ul class="nav-list">
+                <li sec:authorize="isAnonymous()">
+                    <a th:href="@{/login}" th:aria-current="${currentPath == '/login'} ? 'page'">Log in</a>
+                </li>
+                <li sec:authorize="isAnonymous()">
+                    <a class="button button-small" th:href="@{/register}"
+                       th:aria-current="${currentPath == '/register'} ? 'page'">Create account</a>
+                </li>
+                <li sec:authorize="hasRole('PATIENT')">
+                    <a th:href="@{/dashboard}" th:aria-current="${currentPath == '/dashboard'} ? 'page'">Dashboard</a>
+                </li>
+                <li sec:authorize="hasRole('PATIENT')">
+                    <a th:href="@{/records}" th:aria-current="${currentPath == '/records'} ? 'page'">My records</a>
+                </li>
+                <li sec:authorize="hasRole('ADMIN')">
+                    <a th:href="@{/admin}" th:aria-current="${currentPath == '/admin'} ? 'page'">Users</a>
+                </li>
+                <li sec:authorize="isAuthenticated()">
+                    <form class="inline-form" th:action="@{/logout}" method="post">
+                        <button type="submit" class="link-button">Log out</button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main id="main-content" tabindex="-1" th:replace="${content}">
+    <p>Page content</p>
+</main>
+
+<footer class="site-footer">
+    <div class="container">
+        <p><strong>MediVault</strong> &middot; Built by Rohit Srivastava &middot; Java + Entrepreneurship Development mini-project</p>
+        <p class="muted">MediVault is not a medical device and does not give medical advice.</p>
+    </div>
+</footer>
+</body>
+</html>

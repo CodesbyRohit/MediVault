@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Create account &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <h1>Create your account</h1>
+    <p class="muted">All fields are required. Use fictional details only.</p>
+
+    <form class="form" th:action="@{/register}" th:object="${registrationForm}" method="post" novalidate>
+
+        <div class="error-summary" role="alert" tabindex="-1" th:if="${#fields.hasAnyErrors()}">
+            <h2>Please correct the following</h2>
+            <ul>
+                <li th:each="err : ${#fields.detailedErrors()}">
+                    <a th:href="|#${err.fieldName}|" th:text="${err.message}">Error message</a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('fullName')} ? 'field-invalid'">
+            <label for="fullName">Full name</label>
+            <p class="field-error" id="fullName-error" th:if="${#fields.hasErrors('fullName')}"
+               th:errors="*{fullName}">Error</p>
+            <input type="text" th:field="*{fullName}" autocomplete="name" required maxlength="100"
+                   th:aria-invalid="${#fields.hasErrors('fullName')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('fullName')} ? 'fullName-error'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('email')} ? 'field-invalid'">
+            <label for="email">Email address</label>
+            <p class="field-error" id="email-error" th:if="${#fields.hasErrors('email')}"
+               th:errors="*{email}">Error</p>
+            <input type="email" th:field="*{email}" autocomplete="email" required maxlength="254"
+                   spellcheck="false" autocapitalize="none"
+                   th:aria-invalid="${#fields.hasErrors('email')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('email')} ? 'email-error'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('password')} ? 'field-invalid'">
+            <label for="password">Password</label>
+            <p class="field-hint" id="password-hint">Use 8–64 characters, including at least one letter and one number.
+                Accented letters and emoji take extra space (72-byte limit).</p>
+            <p class="field-error" id="password-error" th:if="${#fields.hasErrors('password')}"
+               th:errors="*{password}">Error</p>
+            <input type="password" th:field="*{password}" autocomplete="new-password" required maxlength="64"
+                   th:aria-invalid="${#fields.hasErrors('password')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('password')} ? 'password-hint password-error' : 'password-hint'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('confirmPassword')} ? 'field-invalid'">
+            <label for="confirmPassword">Confirm password</label>
+            <p class="field-error" id="confirmPassword-error" th:if="${#fields.hasErrors('confirmPassword')}"
+               th:errors="*{confirmPassword}">Error</p>
+            <input type="password" th:field="*{confirmPassword}" autocomplete="new-password" required maxlength="64"
+                   th:aria-invalid="${#fields.hasErrors('confirmPassword')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('confirmPassword')} ? 'confirmPassword-error'">
+        </div>
+
+        <button type="submit" class="button button-block">Create account</button>
+    </form>
+
+    <p class="form-footer">Already have an account? <a th:href="@{/login}">Log in</a></p>
+</main>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Record details &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p><a th:href="@{/records}">&larr; Back to my records</a></p>
+    <div class="page-header">
+        <p class="eyebrow">Medical record</p>
+        <h1 th:text="${record.title}">Record title</h1>
+    </div>
+
+    <dl class="details">
+        <dt>Type</dt>
+        <dd th:text="${record.recordType.displayName}">Type</dd>
+        <dt>Date</dt>
+        <dd>
+            <time th:datetime="${record.recordDate}"
+                  th:text="${#temporals.format(record.recordDate, 'd MMMM yyyy')}">1 January 2026</time>
+        </dd>
+        <dt>Provider</dt>
+        <dd th:text="${record.providerName} ?: 'Not recorded'">Provider</dd>
+        <dt>Notes</dt>
+        <dd th:text="${record.notes} ?: 'No notes'">Notes</dd>
+    </dl>
+</main>
+</body>
+</html>

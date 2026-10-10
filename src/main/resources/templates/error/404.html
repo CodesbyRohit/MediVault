@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Page not found &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p class="eyebrow">Error 404</p>
+    <h1>Page not found</h1>
+    <p>The page or record you asked for doesn't exist, or it isn't available to your account.</p>
+    <p><a class="button" th:href="@{/}">Return to the home page</a></p>
+</main>
+</body>
+</html>

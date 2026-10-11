@@ -203,14 +203,14 @@ Registration shows **"An account with this email already exists."** This is a **
 | Intended application database | MySQL **8.x** (`DB_*` env vars) | Default configuration (`application.properties`). Set up separately later. **No installed database service is changed or stopped.** |
 
 - **D5 (resolved):** H2's Maven scope changed from `test` to `runtime`, the minimal change that makes the `local-h2` profile possible. H2 is now included in the packaged application.
-- **H2 startup guard:** `H2DatabaseGuard` runs before the application context is created and **refuses to start** in two cases:
+- **H2 startup guard:** `DatabaseSafetyGuard` (called `H2DatabaseGuard` in Milestone 1; extended in Milestone 2 with database-profile and MySQL connection rules) runs before the application context is created and **refuses to start** in these H2 cases:
   1. The datasource is H2 (an H2 URL, or an empty URL, which Spring Boot would turn into an embedded H2 database) but neither the `local-h2` nor the `test` profile is active. A deployment is therefore never silently switched to an in-memory database.
   2. The `local-h2` profile is active but the datasource is not in-memory H2 (`jdbc:h2:mem:`), for example because `SPRING_DATASOURCE_URL` overrides it with MySQL. `local-h2` therefore never silently runs against a real database.
 
   Neither error message includes the JDBC URL, because URLs can contain credentials.
 - **D3 (resolved), fictional demo records:** created **only when both `demo` and `local-h2` are active**. Because the guard (rule 2) only lets `local-h2` start on in-memory H2, demo records cannot be written to MySQL: `local-h2,demo` with a MySQL override is rejected at startup. If `demo` is set without `local-h2`, no records are created and a warning says so. When demo mode is active, each patient who registers gets 3 clearly labelled fictional sample records, created once at registration. A guard skips any account that already has records. Existing accounts are not backfilled. A warning is logged at startup whenever demo mode is active.
 - **Schema:** Hibernate `ddl-auto` (`update` by default, `create-drop` for `test` and `local-h2`). There are no migrations in Milestone 1.
-- **Planned for M3 (deferred, not implemented):** introduce **Flyway** migrations and make Hibernate **`validate`** the default schema mode before MySQL 8.x integration, so a real database is never changed implicitly by `ddl-auto=update`.
+- **Milestone 2 (in progress; reordered by decision D5):** **Flyway** migrations plus Hibernate **`validate`** in a dedicated `mysql` profile, replacing `ddl-auto=update`, so a real database is never changed implicitly. The code foundation exists; it is not verified until migrations and validation run against the isolated MySQL 8.4 instance.
 
 ---
 
@@ -283,7 +283,7 @@ Registration shows **"An account with this email already exists."** This is a **
 - **No login rate-limiting or account lockout.** Brute-force protection is needed before any public deployment.
 - **No HTTPS**, so the session cookie is not marked `Secure`.
 - **`local-h2` data is lost on restart**, by design.
-- **The MySQL 8.x configuration** has not yet been tested against a real MySQL 8 server. The default `ddl-auto=update` is to be replaced by Flyway plus `validate` in M3.
+- **The MySQL 8.4 configuration** has not yet been verified against the real isolated MySQL 8.4 server. Milestone 2 replaces `ddl-auto=update` with Flyway plus `validate` (`mysql` profile).
 - **Changing `MEDIVAULT_ADMIN_EMAIL`** leaves the previous admin active (section 5, D1).
 - **Manual browser checks are still required before the faculty demo:** 320 px layout, keyboard-only navigation, and no Content-Security-Policy violations in the browser console.
 
@@ -294,8 +294,8 @@ Registration shows **"An account with this email already exists."** This is a **
 | Milestone | Scope |
 |---|---|
 | **M1 (this document)** | Layout, landing page, registration, BCrypt, login/logout, dashboard, own-records list, admin user list, role and ownership tests |
-| M2 | Create, edit and delete records, plus private PDF upload and download through ownership-checked controllers (`RecordDocument`) |
-| M3 | MySQL 8.x integration: introduce Flyway migrations and Hibernate `validate` as the default schema mode, before connecting to a real MySQL 8.x database (Flyway needs approval) |
+| **M2 (in progress, D5)** | MySQL 8.4 integration: isolated instance on `127.0.0.1:3307`, Flyway migrations (11.20.3, subject to the D6 gates) and Hibernate `validate` in the `mysql` profile, least-privilege accounts, opt-in MySQL integration tests |
+| M3 | Create, edit and delete records, plus private PDF upload and download through ownership-checked controllers (`RecordDocument`) |
 | M4 | Controlled sharing (time-limited, revocable) and an optional emergency QR code (ZXing, only if it's actually useful) |
 | M5 | Presentation polish, ED pitch material and final documentation |
 

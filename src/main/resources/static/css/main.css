@@ -530,6 +530,12 @@ a:hover {
     width: 100%;
   }
 
+  /* Once the table is a block, keep the caption full-width instead of shrink-to-fit. */
+  .table caption {
+    display: block;
+    padding: 0.65rem 0.75rem 0.35rem;
+  }
+
   .table tr {
     border-bottom: 2px solid var(--color-border);
   }

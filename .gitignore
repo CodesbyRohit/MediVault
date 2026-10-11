@@ -12,6 +12,23 @@ application-local.properties
 application-local.yml
 *.log
 
+### TLS material, keystores, database dumps and local MySQL config (never commit) ###
+# Note: *.sql is deliberately NOT ignored, so Flyway migrations (src/main/resources/db/migration) stay tracked.
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+*.dump
+*.sql.gz
+*-dump.sql
+my.ini
+my.cnf
+mysqld.pid
+
 ### STS ###
 .apt_generated
 .classpath

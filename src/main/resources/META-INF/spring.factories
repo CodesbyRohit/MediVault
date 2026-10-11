@@ -1,2 +1,2 @@
 org.springframework.boot.env.EnvironmentPostProcessor=\
-com.medivault.config.H2DatabaseGuard
+com.medivault.config.DatabaseSafetyGuard

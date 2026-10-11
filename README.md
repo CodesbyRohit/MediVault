@@ -2,11 +2,43 @@
 
 A personal medical records vault built by **Rohit Srivastava** as a Java + Entrepreneurship Development (ED) college mini-project.
 
-> **Status: Milestone 1.** Accounts, secure login, a patient dashboard, an owner-only records list and a
-> read-only admin user list are implemented. Adding records and uploading PDFs are **not** implemented yet.
-> Requirements: [`docs/milestone-1-requirements.md`](docs/milestone-1-requirements.md).
+> **Status: Milestone 1 complete; Milestone 2 (MySQL 8.4 + Flyway) in progress.** Accounts, secure login, a
+> patient dashboard, an owner-only records list and a read-only admin user list are implemented. The MySQL 8.4
+> foundation (Flyway migration, `mysql` profile, fail-closed connection guard, opt-in MySQL tests) is in place in
+> code, but **MySQL 8.4 integration has not been verified yet**. Adding records and uploading PDFs are **not**
+> implemented. Requirements: [`docs/milestone-1-requirements.md`](docs/milestone-1-requirements.md).
 >
 > ⚠️ Use **fictional data only**. MediVault must never contain real patient information.
+
+## Quick start: no MySQL needed (local H2 mode)
+
+MediVault runs locally **without any MySQL server**, using the `local-h2` profile: an in-memory H2 database inside
+the application, with the same Spring Security login, BCrypt hashing, authorization rules and server-side record
+storage as everywhere else. Only a JDK 17+ is required.
+
+```powershell
+cd "D:\Rohit Srivastava\MediVault"
+
+# 1. Start the app (Ctrl+C stops it). Add ",demo" to the profile list for fictional sample records.
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-h2"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-h2,demo"
+
+# 2. Open the app in a browser on this computer:  http://localhost:8080
+#    Register a patient account, log in, and (with ",demo") see 3 fictional sample records.
+
+# 3. Run the tests (in-memory H2; no MySQL needed)
+.\mvnw.cmd test
+```
+
+- **Development only, fictional data only.** Local H2 mode is not a place to store real patients' confidential
+  medical information.
+- **Data resets:** the H2 database lives in memory, so every account and record disappears when the app stops.
+- **Local only:** in this mode the app listens on `127.0.0.1:8080`, so it can't be reached from other computers.
+  The DevTools LiveReload server and the H2 web console are off.
+- **An admin account** is optional. See [Admin account](#admin-account-optional).
+- **MySQL work is kept for later:** the `mysql` profile, the Flyway migration (`db/migration/mysql`) and the MySQL
+  safety guard are unchanged and simply inactive in local H2 mode. See
+  [Run against MySQL 8.4](#run-against-mysql-84-mysql-profile-milestone-2).
 
 ## Features (Milestone 1)
 
@@ -42,8 +74,13 @@ A personal medical records vault built by **Rohit Srivastava** as a Java + Entre
 
 On macOS, Linux or Git Bash, use `./mvnw` instead of `.\mvnw.cmd`.
 
-Tests always use their own in-memory H2 database. They ignore `DB_*`, `SPRING_DATASOURCE_*` and
+The regular tests always use their own in-memory H2 database. They ignore `DB_*`, `SPRING_DATASOURCE_*` and
 `MEDIVAULT_ADMIN_*` environment variables.
+
+The MySQL 8.4 integration tests (`src/test/java/com/medivault/mysql`) are **opt-in**: they are reported as
+*skipped* unless `MEDIVAULT_IT_DB_URL` is set to the approved `jdbc:mysql://127.0.0.1:<port>/medivault_it?...`
+shape (never port 3306), together with the `MEDIVAULT_IT_DB_*` account variables. A skipped run proves nothing
+about MySQL.
 
 ## Run locally without MySQL (`local-h2` profile)
 
@@ -71,6 +108,9 @@ Then open http://localhost:8080 and stop the app with `Ctrl+C`.
   to disk. `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` are ignored by this profile.
 - The startup log line `HikariPool-1 - Added connection ... url=jdbc:h2:mem:medivault_local` confirms that the
   in-memory database is in use.
+- The app listens on `127.0.0.1:8080` only, and the DevTools LiveReload server is disabled. To show the app
+  from another device on a trusted network, start it with `"-Dspring-boot.run.arguments=--server.address=0.0.0.0"`;
+  still use fictional data only.
 - **Safety guards** (checked before the app starts; messages never show the database URL):
   - H2 is only accepted with the `local-h2` (or test) profile. If the app is started without it while pointing
     at H2, or with an empty database URL, it refuses to start with
@@ -96,37 +136,58 @@ labelled fictional sample records:
 - Each account is seeded at most once, at registration. Accounts that already have records are skipped.
 - **To disable it,** start without `demo`: `"-Dspring-boot.run.profiles=local-h2"`.
 
-## Run against MySQL 8.x
+## Run against MySQL 8.4 (`mysql` profile, Milestone 2)
 
-> ⚠️ **Use an isolated MySQL 8.x instance on an explicitly chosen port.** On the author's machine, port **3306**
-> belongs to an existing **MySQL 5.5** service that must not be touched. MediVault must never be pointed at it:
-> MySQL 5.5 is not supported by Spring Boot 3, and `ddl-auto=update` could change its schema.
+> ⚠️ **Use an isolated MySQL 8.4 instance on 127.0.0.1 and an explicitly chosen port.** MediVault refuses to
+> connect to port **3306** (the default MySQL port, historically used by a legacy MySQL 5.5 installation on the
+> author's machine) at all.
+>
+> **Not verified, and currently not runnable here:** no MySQL server is installed on the development machine at
+> the moment (both MySQL installations were removed on 2026-10-11). This section describes the intended setup;
+> use the `local-h2` profile for development until the steps below are completed.
 
-Database settings are read from environment variables. **Never commit real credentials.**
+**Remaining MySQL work (Milestone 2), in order. None of these steps has been done yet:**
+1. Install or restore an isolated MySQL 8.4 server bound to `127.0.0.1` on a port other than 3306, with
+   `require_secure_transport=ON`.
+2. Verify the root-password rotation and that plaintext connections are refused (MySQL error 3159).
+3. Create `medivault_dev`, `medivault_it` and the four least-privilege accounts (`medivault_{dev,it}_{migrator,app}`),
+   all `@127.0.0.1` with `REQUIRE SSL`, then verify their exact grants.
+4. Copy the server's public `ca.pem` and build a passwordless PKCS12 truststore for `sslMode=VERIFY_CA`.
+5. Run the opt-in MySQL tests against `medivault_it` (they are reported as skipped until then). This also decides
+   the enum column type and confirms Flyway 11.20.3 works with MySQL 8.4.
+6. Migrate and validate `medivault_dev` independently.
 
-| Variable       | Default                                  | Purpose                  |
-|----------------|------------------------------------------|--------------------------|
-| `DB_URL`       | *(none, **required**)*                   | JDBC URL of the MySQL 8.x instance |
-| `DB_USERNAME`  | `medivault`                              | Database user            |
-| `DB_PASSWORD`  | *(empty)*                                | Database password        |
-| `JPA_DDL_AUTO` | `update`                                 | Hibernate schema mode    |
+A database profile must always be chosen explicitly. Starting without `local-h2` or `mysql` is refused
+("Refusing to start: no database profile is active..."), so the app can never fall back to another server.
 
-`DB_URL` has **no default**. If it isn't set and no `local-h2` profile is active, the app refuses to start
-(`Could not resolve placeholder 'DB_URL'`) before opening any database connection, so it can never fall back to
-another server by accident.
+With the `mysql` profile, **Flyway** creates and evolves the schema from versioned migrations in
+`src/main/resources/db/migration/mysql`, using a separate migration account. Hibernate only **validates** the
+schema (`ddl-auto=validate`); it never changes it. Flyway `clean` and `baseline-on-migrate` are disabled.
 
-Example (PowerShell, current session only). Replace `<mysql8-port>` with the port of your isolated MySQL 8.x
-instance, **not** 3306 on this machine:
+All settings come from environment variables, with **no defaults**. **Never put passwords in `DB_URL`, files or Git.**
+
+| Variable | Example / rule |
+|---|---|
+| `DB_URL` | `jdbc:mysql://127.0.0.1:<port>/medivault_dev?sslMode=VERIFY_CA&trustCertificateKeyStoreUrl=file:/<path>&trustCertificateKeyStoreType=PKCS12` |
+| `DB_USERNAME` / `DB_PASSWORD` | `medivault_dev_app`: data access only |
+| `DB_MIGRATION_USERNAME` / `DB_MIGRATION_PASSWORD` | `medivault_dev_migrator`: Flyway schema changes only |
+
+Before any connection is attempted, `DatabaseSafetyGuard` refuses the configuration unless:
+- the host is exactly `127.0.0.1` with an explicit port that is **not 3306**, and the database is
+  `medivault_dev` or `medivault_it`;
+- `sslMode` is `VERIFY_CA` or `VERIFY_IDENTITY` (never `DISABLED`, `PREFERRED` or `REQUIRED`), and only
+  allow-listed URL parameters are used: no credentials, `useSSL`, `allowPublicKeyRetrieval` and similar;
+- the accounts match the database (`medivault_<env>_app` / `medivault_<env>_migrator`);
+- `ddl-auto` is `validate` and Flyway is enabled, with `clean` disabled.
+
+Refusal messages never contain the URL or credentials. Flyway's own URL log line is silenced in this profile.
 
 ```powershell
-$env:DB_URL = "jdbc:mysql://localhost:<mysql8-port>/medivault"
-$env:DB_USERNAME = "medivault"
-$env:DB_PASSWORD = "<your-password>"
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=mysql"
 ```
 
-> **Note:** the MySQL 8.x setup has **not been tested yet**. It is planned for milestone M3, which will also
-> introduce Flyway migrations and make Hibernate `validate` the default instead of `update`.
+**Note on TLS:** the auto-generated MySQL certificate has no Subject Alternative Name, so only `VERIFY_CA`
+(certificate-chain verification) works with it; `VERIFY_IDENTITY` would need a reviewed replacement certificate.
 
 ## Admin account (optional)
 
@@ -154,13 +215,14 @@ $env:MEDIVAULT_ADMIN_PASSWORD = "<admin-password>"   # 8–64 chars, letter + nu
 To see which relevant variables are set (names only, values hidden):
 
 ```powershell
-Get-ChildItem Env: | Where-Object Name -Match '^(DB_|JPA_DDL_AUTO|SPRING_DATASOURCE_|MEDIVAULT_)' | Select-Object Name
+Get-ChildItem Env: | Where-Object Name -Match '^(DB_|SPRING_DATASOURCE_|SPRING_JPA_|SPRING_FLYWAY_|MEDIVAULT_)' | Select-Object Name
 ```
 
 To clear them from the current PowerShell session:
 
 ```powershell
-Remove-Item Env:DB_URL, Env:DB_USERNAME, Env:DB_PASSWORD, Env:JPA_DDL_AUTO, Env:MEDIVAULT_ADMIN_EMAIL, Env:MEDIVAULT_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+Remove-Item Env:DB_URL, Env:DB_USERNAME, Env:DB_PASSWORD, Env:DB_MIGRATION_USERNAME, Env:DB_MIGRATION_PASSWORD, Env:MEDIVAULT_ADMIN_EMAIL, Env:MEDIVAULT_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+Get-ChildItem Env: | Where-Object Name -Like 'MEDIVAULT_IT_*' | ForEach-Object { Remove-Item "Env:$($_.Name)" }
 ```
 
 If you saved any of them permanently for your Windows user, remove each one like this, then open a new terminal:
@@ -187,17 +249,21 @@ If you saved any of them permanently for your Windows user, remove each one like
 ```
 src/main/java/com/medivault/
   admin/      read-only user list, admin bootstrap
-  config/     H2 startup guard (refuses H2 outside "local-h2"/tests)
+  config/     DatabaseSafetyGuard + MySqlUrlPolicy (database profile, H2 and MySQL connection rules,
+              enforced before any connection)
   demo/       optional fictional demo records ("local-h2" + "demo" profiles)
   record/     medical records: entity, owner-scoped queries, dashboard and record pages
   security/   Spring Security configuration and database-backed login
   user/       accounts, registration, password policy
   web/        landing page, login and registration pages
 src/main/resources/
-  application.properties            MySQL (default) configuration
-  application-local-h2.properties   "local-h2" profile
+  application.properties            shared settings (no datasource; a database profile is required)
+  application-local-h2.properties   "local-h2" profile (in-memory H2, Flyway off)
+  application-mysql.properties      "mysql" profile (MySQL 8.4 via env vars, Flyway + Hibernate validate)
+  db/migration/mysql/               Flyway versioned migrations (V1__baseline_schema.sql)
   templates/                        Thymeleaf pages (layout.html is the shared layout)
   static/                           CSS and images
-src/test/                           H2-backed integration and unit tests
+src/test/java/com/medivault/        H2-backed integration and unit tests
+src/test/java/com/medivault/mysql/  opt-in MySQL 8.4 tests (skipped unless MEDIVAULT_IT_DB_URL is set)
 docs/                               requirements
 ```

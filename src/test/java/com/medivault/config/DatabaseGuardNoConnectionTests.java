@@ -187,6 +187,44 @@ class DatabaseGuardNoConnectionTests {
 		assertThat(attempt.contextCreated()).as("no application context may be created").isFalse();
 	}
 
+	/**
+	 * Regression (M4 audit): pool- and Flyway-level settings must not redirect an in-memory profile to
+	 * another server. Before the fix, each of these really connected to the canary.
+	 */
+	@Test
+	void inMemoryProfilesCannotBeRedirectedThroughPoolOrFlywaySettings() {
+		String target = canaryUrl("?sslMode=VERIFY_CA&connectTimeout=1000&socketTimeout=1000");
+		List<List<String>> cases = List.of(
+				List.of("--spring.profiles.active=local-h2", "--spring.flyway.enabled=true", "--spring.flyway.url=" + target,
+						"--spring.flyway.user=medivault_it_migrator", "--spring.flyway.password="),
+				List.of("--spring.profiles.active=local-h2,demo",
+						"--spring.datasource.hikari.data-source-class-name=com.mysql.cj.jdbc.MysqlDataSource",
+						"--spring.datasource.hikari.data-source-properties.url=" + target),
+				List.of("--spring.profiles.active=test",
+						"--spring.datasource.hikari.data-source-class-name=com.mysql.cj.jdbc.MysqlDataSource",
+						"--spring.datasource.hikari.data-source-properties.url=" + target));
+		org.assertj.core.api.SoftAssertions softly = new org.assertj.core.api.SoftAssertions();
+		int acceptedBefore = 0;
+		for (List<String> overrides : cases) {
+			List<String> args = new ArrayList<>(List.of("--spring.main.banner-mode=off", "--logging.level.root=WARN",
+					"--medivault.admin.email=", "--medivault.admin.password="));
+			args.addAll(overrides);
+
+			Attempt attempt = start(args);
+
+			String name = overrides.toString();
+			softly.assertThat(attempt.failure()).as(name).isNotNull();
+			if (attempt.failure() != null) {
+				softly.assertThat(rootMessages(attempt.failure())).as(name).anyMatch(m -> m.startsWith("Refusing to start"));
+			}
+			softly.assertThat(attempt.contextCreated()).as(name + ": no application context may be created").isFalse();
+			int accepted = canary.acceptedAfterSettling();
+			softly.assertThat(accepted - acceptedBefore).as(name + ": no connection may be attempted").isZero();
+			acceptedBefore = accepted;
+		}
+		softly.assertAll();
+	}
+
 	@Test
 	void positiveControlCanaryDetectsAConnectionAttempt() {
 		// Accepted by the guard, so the app really tries to connect; the canary never speaks MySQL,

@@ -6,6 +6,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import com.medivault.document.DocumentSizes;
+import com.medivault.document.RecordDocumentService;
 import com.medivault.security.MediVaultUserDetails;
 
 /**
@@ -17,8 +19,11 @@ public class RecordController {
 
 	private final MedicalRecordService recordService;
 
-	public RecordController(MedicalRecordService recordService) {
+	private final RecordDocumentService documentService;
+
+	public RecordController(MedicalRecordService recordService, RecordDocumentService documentService) {
 		this.recordService = recordService;
+		this.documentService = documentService;
 	}
 
 	@GetMapping("/dashboard")
@@ -38,6 +43,8 @@ public class RecordController {
 	@GetMapping("/records/{id}")
 	public String detail(@PathVariable Long id, @AuthenticationPrincipal MediVaultUserDetails patient, Model model) {
 		model.addAttribute("record", recordService.getForOwner(id, patient.getId()));
+		model.addAttribute("documents", documentService.listForOwner(id, patient.getId()));
+		model.addAttribute("maxUploadSize", DocumentSizes.format(documentService.maxUploadBytes()));
 		return "records/detail";
 	}
 

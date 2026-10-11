@@ -9,6 +9,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.medivault.document.RecordDocumentRepository;
 import com.medivault.record.MedicalRecord;
 import com.medivault.record.MedicalRecordRepository;
 import com.medivault.record.RecordType;
@@ -35,6 +36,9 @@ abstract class MySqlTestSupport {
 	protected MedicalRecordRepository recordRepository;
 
 	@Autowired
+	protected RecordDocumentRepository documentRepository;
+
+	@Autowired
 	protected PasswordEncoder passwordEncoder;
 
 	@Autowired
@@ -42,6 +46,7 @@ abstract class MySqlTestSupport {
 
 	@BeforeEach
 	void deleteTestRows() {
+		documentRepository.deleteAll();
 		recordRepository.deleteAll();
 		userRepository.deleteAll();
 	}

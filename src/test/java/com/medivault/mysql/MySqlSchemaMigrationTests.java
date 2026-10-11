@@ -26,11 +26,10 @@ class MySqlSchemaMigrationTests extends MySqlTestSupport {
 	private Environment environment;
 
 	@Test
-	void flywayAppliedExactlyTheBaselineMigration() {
+	void flywayAppliedExactlyTheVersionedMigrations() {
 		MigrationInfo[] applied = flyway.info().applied();
-		assertThat(applied).hasSize(1);
-		assertThat(applied[0].getVersion().getVersion()).isEqualTo("1");
-		assertThat(applied[0].getState()).isEqualTo(MigrationState.SUCCESS);
+		assertThat(applied).extracting(info -> info.getVersion().getVersion()).containsExactly("1", "2");
+		assertThat(applied).extracting(MigrationInfo::getState).containsOnly(MigrationState.SUCCESS);
 		assertThat(flyway.info().pending()).isEmpty();
 	}
 
@@ -45,7 +44,7 @@ class MySqlSchemaMigrationTests extends MySqlTestSupport {
 	void repeatedMigrationIsANoOpAndChecksumsStillValidate() {
 		assertThat(flyway.migrate().migrationsExecuted).isZero();
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
-		assertThat(flyway.info().applied()).hasSize(1);
+		assertThat(flyway.info().applied()).hasSize(2);
 	}
 
 	@Test

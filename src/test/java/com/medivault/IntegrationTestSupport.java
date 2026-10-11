@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.medivault.document.RecordDocumentRepository;
 import com.medivault.record.MedicalRecord;
 import com.medivault.record.MedicalRecordRepository;
 import com.medivault.record.RecordType;
@@ -23,7 +24,8 @@ import com.medivault.user.UserRepository;
  * Base class for all integration tests.
  * <p>
  * {@code @TestPropertySource} outranks OS environment variables, so the in-memory H2
- * database is always used (even if {@code SPRING_DATASOURCE_*} is set) and any
+ * database is always used (even if {@code SPRING_DATASOURCE_*} is set), uploaded PDFs go to
+ * {@code target/test-storage} (never {@code %LOCALAPPDATA%\MediVault}), and any
  * {@code MEDIVAULT_ADMIN_*} variables on the developer's machine are ignored.
  */
 @SpringBootTest
@@ -48,8 +50,12 @@ public abstract class IntegrationTestSupport {
 	@Autowired
 	protected MedicalRecordRepository recordRepository;
 
+	@Autowired
+	protected RecordDocumentRepository documentRepository;
+
 	@BeforeEach
 	void cleanDatabase() {
+		documentRepository.deleteAll();
 		recordRepository.deleteAll();
 		userRepository.deleteAll();
 	}

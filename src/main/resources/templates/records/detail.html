@@ -25,6 +25,45 @@
         <dt>Notes</dt>
         <dd th:text="${record.notes} ?: 'No notes'">Notes</dd>
     </dl>
+
+    <section class="section" aria-labelledby="documents-heading">
+        <h2 id="documents-heading">Documents</h2>
+
+        <div class="alert alert-success" role="status" th:if="${uploadSuccess}">
+            Document uploaded.
+        </div>
+        <div class="alert alert-error" role="alert" th:if="${uploadError}" th:text="${uploadError}">
+            Upload error
+        </div>
+
+        <ul class="record-list documents" th:if="${!documents.isEmpty()}">
+            <li th:each="document : ${documents}">
+                <a th:href="@{/records/{recordId}/documents/{documentId}(recordId=${record.id},documentId=${document.id})}"
+                   th:text="${document.filename}">report.pdf</a>
+                <span class="record-meta">
+                    PDF &middot; <span th:text="${document.sizeLabel}">12 KB</span>
+                    &middot; uploaded
+                    <time th:datetime="${document.uploadedAt}"
+                          th:text="${#temporals.format(document.uploadedAt, 'd MMM yyyy, HH:mm')}">1 Jan 2026, 10:00</time>
+                </span>
+            </li>
+        </ul>
+        <p class="muted" th:if="${documents.isEmpty()}">No documents are attached to this record yet.</p>
+
+        <form class="form" th:action="@{/records/{id}/documents(id=${record.id})}" method="post"
+              enctype="multipart/form-data">
+            <div class="field">
+                <label for="file">Attach a PDF</label>
+                <p class="field-hint" id="file-hint">
+                    PDF files only, up to <span th:text="${maxUploadSize}">10 MB</span>.
+                    Use fictional documents only. Only you can download it.
+                </p>
+                <input type="file" id="file" name="file" accept=".pdf,application/pdf" required
+                       aria-describedby="file-hint">
+            </div>
+            <button type="submit" class="button">Upload PDF</button>
+        </form>
+    </section>
 </main>
 </body>
 </html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Delete document &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p><a th:href="@{/records/{id}(id=${record.id})}">&larr; Back to the record</a></p>
+    <div class="page-header">
+        <p class="eyebrow">Delete document</p>
+        <h1>Delete this document?</h1>
+    </div>
+
+    <div class="alert alert-error" role="note">
+        <p><strong th:text="${document.filename}">report.pdf</strong>
+            (<span th:text="${document.sizeLabel}">12 KB</span>) will be removed from
+            <strong th:text="${record.title}">Record title</strong> permanently.</p>
+        <p>This cannot be undone. Download it first if you want to keep a copy.</p>
+    </div>
+
+    <form class="form" method="post"
+          th:action="@{/records/{recordId}/documents/{documentId}/delete(recordId=${record.id},documentId=${document.id})}">
+        <div class="actions">
+            <button type="submit" class="button button-danger">Delete permanently</button>
+            <a class="button button-secondary" th:href="@{/records/{id}(id=${record.id})}">Keep the document</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

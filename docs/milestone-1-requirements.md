@@ -314,7 +314,7 @@ Registration shows **"An account with this email already exists."** This is a **
 |---|---|
 | **M1 (this document)** | Layout, landing page, registration, BCrypt, login/logout, dashboard, own-records list, admin user list, role and ownership tests |
 | **M2 (in progress, D5)** | MySQL 8.4 integration: isolated instance on `127.0.0.1:3307`, Flyway migrations (11.20.3, subject to the D6 gates) and Hibernate `validate` in the `mysql` profile, least-privilege accounts, opt-in MySQL integration tests |
-| M3 | Create, edit and delete records. (Private PDF upload and download through ownership-checked controllers, `RecordDocument`, was brought forward: D8.) Future requirements recorded in the M4 review: an aggregate per-patient storage quota, and ending open sessions when an account is disabled (together with any account-disabling feature). |
+| M3 | **Implemented on branch `feature/m3-product-completion` (2026-10-12, not yet merged):** create, edit and delete records with optimistic locking (Flyway V3), search/filter/sort/paging, document deletion, a 100 MB per-patient quota and a read-only startup storage check (see README). Original scope: create, edit and delete records. (Private PDF upload and download through ownership-checked controllers, `RecordDocument`, was brought forward: D8.) Future requirements recorded in the M4 review: an aggregate per-patient storage quota, and ending open sessions when an account is disabled (together with any account-disabling feature). |
 | M4 | Controlled sharing (time-limited, revocable) and an optional emergency QR code (ZXing, only if it's actually useful) |
 | M5 | Presentation polish, ED pitch material and final documentation |
 

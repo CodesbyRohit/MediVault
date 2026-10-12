@@ -27,9 +27,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.medivault.TestLinks;
 import com.medivault.document.DocumentRejectedException.Reason;
 import com.medivault.document.DocumentStorage.StoredFile;
+import com.medivault.document.crypto.DocumentCipher;
+import com.medivault.document.crypto.TestKeys;
 
-/** File-level rules of {@link DocumentStorage}, against a JUnit temporary folder only. */
+/**
+ * File-level rules of {@link DocumentStorage}, against a JUnit temporary folder only. Files are stored
+ * encrypted, so content is always read back through {@link DocumentStorage#openVerified}, and the raw
+ * bytes are checked to be ciphertext.
+ */
 class DocumentStorageTests {
+
+	private static final DocumentCipher CIPHER = TestKeys.newCipher();
 
 	private static final Pattern UUID_V4 = Pattern
 		.compile("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
@@ -44,7 +52,7 @@ class DocumentStorageTests {
 	}
 
 	private DocumentStorage storage() {
-		return new DocumentStorage(directory(), MAX, UUID::randomUUID);
+		return new DocumentStorage(directory(), MAX, UUID::randomUUID, CIPHER);
 	}
 
 	private static InputStream stream(byte[] bytes) {
@@ -61,6 +69,20 @@ class DocumentStorageTests {
 		return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
 	}
 
+	/** The document content, read the way downloads read it (decrypted and verified). */
+	private static byte[] content(DocumentStorage storage, String key, byte[] expected) throws Exception {
+		try (InputStream in = storage.openVerified(StorageFormat.ENCRYPTED_V1, key, expected.length, sha256(expected))) {
+			return in.readAllBytes();
+		}
+	}
+
+	/** The raw stored bytes. */
+	private static byte[] raw(DocumentStorage storage, String key) throws IOException {
+		try (InputStream in = storage.open(key)) {
+			return in.readAllBytes();
+		}
+	}
+
 	@Test
 	void storesAValidPdfUnderAnOpaqueKeyWithSizeAndChecksum() throws Exception {
 		DocumentStorage storage = storage();
@@ -71,10 +93,13 @@ class DocumentStorageTests {
 		assertThat(stored.key()).matches(UUID_V4);
 		assertThat(stored.size()).isEqualTo(pdf.length);
 		assertThat(stored.sha256()).isEqualTo(sha256(pdf)).hasSize(64);
+		assertThat(stored.keyId()).isEqualTo(CIPHER.primaryKeyId());
 		assertThat(files()).extracting(file -> file.getFileName().toString()).containsExactly(stored.key());
-		try (InputStream in = storage.open(stored.key())) {
-			assertThat(in.readAllBytes()).isEqualTo(pdf);
-		}
+		assertThat(content(storage, stored.key(), pdf)).isEqualTo(pdf);
+		assertThat(new String(raw(storage, stored.key()), StandardCharsets.ISO_8859_1)).as("stored encrypted")
+			.startsWith("MVDOC")
+			.doesNotContain("%PDF")
+			.doesNotContain("Complete blood count");
 	}
 
 	@Test
@@ -91,7 +116,7 @@ class DocumentStorageTests {
 	@Test
 	void theFolderIsCreatedWhenMissing() {
 		Path nested = tempDir.resolve("a").resolve("b").resolve("records");
-		new DocumentStorage(nested, MAX, UUID::randomUUID);
+		new DocumentStorage(nested, MAX, UUID::randomUUID, CIPHER);
 		assertThat(nested).isDirectory();
 	}
 
@@ -115,7 +140,7 @@ class DocumentStorageTests {
 
 	@Test
 	void aRelativeFolderIsRefused() {
-		assertThatThrownBy(() -> new DocumentStorage(Path.of("records"), MAX, UUID::randomUUID))
+		assertThatThrownBy(() -> new DocumentStorage(Path.of("records"), MAX, UUID::randomUUID, CIPHER))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("absolute");
 	}
@@ -179,7 +204,7 @@ class DocumentStorageTests {
 	@Test
 	void anExistingStoredFileIsNeverOverwritten() throws Exception {
 		UUID fixed = UUID.randomUUID();
-		DocumentStorage storage = new DocumentStorage(directory(), MAX, () -> fixed);
+		DocumentStorage storage = new DocumentStorage(directory(), MAX, () -> fixed, CIPHER);
 		byte[] first = FictionalPdf.bytes("First upload");
 		String key = storage.store(stream(first)).key();
 
@@ -187,9 +212,7 @@ class DocumentStorageTests {
 			.isInstanceOf(DocumentStorageException.class)
 			.hasMessageContaining("nothing was overwritten");
 
-		try (InputStream in = storage.open(key)) {
-			assertThat(in.readAllBytes()).isEqualTo(first);
-		}
+		assertThat(content(storage, key, first)).isEqualTo(first);
 		assertThat(files()).as("no partial file may remain").hasSize(1);
 	}
 
@@ -257,9 +280,7 @@ class DocumentStorageTests {
 
 		assertThat(storage.exists(first)).isFalse();
 		assertThat(storage.exists(second)).isTrue();
-		try (InputStream in = storage.open(second)) {
-			assertThat(in.readAllBytes()).isEqualTo(keep);
-		}
+		assertThat(content(storage, second, keep)).isEqualTo(keep);
 	}
 
 	@Test

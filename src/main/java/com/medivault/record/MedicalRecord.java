@@ -18,6 +18,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -71,6 +72,11 @@ public class MedicalRecord {
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
+	/** Optimistic-locking counter: an edit based on an outdated copy of the record is refused. */
+	@Version
+	@Column(nullable = false)
+	private long version;
+
 	protected MedicalRecord() {
 		// for JPA
 	}
@@ -78,6 +84,15 @@ public class MedicalRecord {
 	public MedicalRecord(User owner, String title, RecordType recordType, LocalDate recordDate, String providerName,
 			String notes) {
 		this.owner = owner;
+		this.title = title;
+		this.recordType = recordType;
+		this.recordDate = recordDate;
+		this.providerName = providerName;
+		this.notes = notes;
+	}
+
+	/** Replaces the editable fields. The owner, id and timestamps can never change this way. */
+	public void revise(String title, RecordType recordType, LocalDate recordDate, String providerName, String notes) {
 		this.title = title;
 		this.recordType = recordType;
 		this.recordDate = recordDate;
@@ -127,6 +142,10 @@ public class MedicalRecord {
 
 	public Instant getUpdatedAt() {
 		return updatedAt;
+	}
+
+	public long getVersion() {
+		return version;
 	}
 
 }

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Delete record &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow">
+    <p><a th:href="@{/records/{id}(id=${record.id})}">&larr; Back to the record</a></p>
+    <div class="page-header">
+        <p class="eyebrow">Delete record</p>
+        <h1>Delete this record?</h1>
+    </div>
+
+    <div class="alert alert-error" role="note">
+        <p><strong th:text="${record.title}">Record title</strong> will be deleted permanently.</p>
+        <p th:if="${documentCount > 0}"
+           th:text="${documentCount == 1} ? 'Its attached PDF document will be deleted too.'
+                    : |All ${documentCount} attached PDF documents will be deleted too.|">
+            Its documents will be deleted too.</p>
+        <p>This cannot be undone. MediVault keeps no copy.</p>
+    </div>
+
+    <form class="form" th:action="@{/records/{id}/delete(id=${record.id})}" method="post">
+        <div class="actions">
+            <button type="submit" class="button button-danger">Delete permanently</button>
+            <a class="button button-secondary" th:href="@{/records/{id}(id=${record.id})}">Keep the record</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

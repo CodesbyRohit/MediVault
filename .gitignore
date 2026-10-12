@@ -12,6 +12,12 @@ application-local.properties
 application-local.yml
 *.log
 
+### Document encryption keys (never commit; see README, "Document encryption key") ###
+*document-key*.json
+*document-key*.json.bak-*
+*document-key*.json.new
+*.keyset.json
+
 ### TLS material, keystores, database dumps and local MySQL config (never commit) ###
 # Note: *.sql is deliberately NOT ignored, so Flyway migrations (src/main/resources/db/migration) stay tracked.
 *.pem

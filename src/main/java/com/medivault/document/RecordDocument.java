@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -26,7 +28,8 @@ import com.medivault.record.MedicalRecord;
 @Entity
 @Table(name = "record_documents",
 		indexes = @Index(name = "idx_record_documents_record", columnList = "record_id"),
-		uniqueConstraints = @UniqueConstraint(name = "uk_record_documents_storage_key", columnNames = "storage_key"))
+		uniqueConstraints = { @UniqueConstraint(name = "uk_record_documents_storage_key", columnNames = "storage_key"),
+				@UniqueConstraint(name = "uk_record_documents_legacy_storage_key", columnNames = "legacy_storage_key") })
 public class RecordDocument {
 
 	@Id
@@ -57,18 +60,34 @@ public class RecordDocument {
 	@Column(name = "uploaded_at", nullable = false, updatable = false)
 	private Instant uploadedAt;
 
+	/** How the file is stored; authoritative when the file is read (see {@link StorageFormat}). */
+	@Enumerated(EnumType.STRING)
+	@Column(name = "storage_format", nullable = false, length = 20)
+	private StorageFormat storageFormat;
+
+	/** Tink id of the key that encrypted the file; {@code null} for {@link StorageFormat#PLAIN_V0}. */
+	@Column(name = "key_id")
+	private Long keyId;
+
+	/** Storage key of the plaintext original while a conversion's clean-up is pending; never served. */
+	@Column(name = "legacy_storage_key", length = 36)
+	private String legacyStorageKey;
+
 	protected RecordDocument() {
 		// for JPA
 	}
 
+	/** A newly uploaded, encrypted document. */
 	public RecordDocument(MedicalRecord record, String originalFilename, String storageKey, String contentType,
-			long sizeBytes, String sha256) {
+			long sizeBytes, String sha256, int keyId) {
 		this.record = record;
 		this.originalFilename = originalFilename;
 		this.storageKey = storageKey;
 		this.contentType = contentType;
 		this.sizeBytes = sizeBytes;
 		this.sha256 = sha256;
+		this.storageFormat = StorageFormat.ENCRYPTED_V1;
+		this.keyId = (long) keyId;
 	}
 
 	@PrePersist
@@ -102,6 +121,18 @@ public class RecordDocument {
 
 	public Instant getUploadedAt() {
 		return uploadedAt;
+	}
+
+	public StorageFormat getStorageFormat() {
+		return storageFormat;
+	}
+
+	public Long getKeyId() {
+		return keyId;
+	}
+
+	String getLegacyStorageKey() {
+		return legacyStorageKey;
 	}
 
 }

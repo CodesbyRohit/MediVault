@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title th:text="${record == null} ? 'Add a record · MediVault' : 'Edit record · MediVault'">Record &middot; MediVault</title>
+</head>
+<body>
+<main id="main-content" tabindex="-1" class="container narrow"
+      th:with="editing=${record != null},
+               action=${editing} ? @{/records/{id}/edit(id=${record.id})} : @{/records},
+               cancel=${editing} ? @{/records/{id}(id=${record.id})} : @{/records}">
+    <p><a th:href="${cancel}" th:text="${editing} ? '← Back to the record' : '← Back to my records'">&larr; Back</a></p>
+    <div class="page-header">
+        <p class="eyebrow">Medical record</p>
+        <h1 th:text="${editing} ? 'Edit record' : 'Add a record'">Add a record</h1>
+        <p class="muted">Fields marked optional can be left empty. Use fictional details only.</p>
+    </div>
+
+    <div class="alert alert-error" role="alert" th:if="${conflict}" th:text="${conflict}">
+        This record was changed in another window.
+    </div>
+
+    <form class="form" th:action="${action}" th:object="${recordForm}" method="post" novalidate>
+
+        <div class="error-summary" role="alert" tabindex="-1" th:if="${#fields.hasAnyErrors()}">
+            <h2>Please correct the following</h2>
+            <ul>
+                <li th:each="err : ${#fields.detailedErrors()}">
+                    <a th:href="|#${err.fieldName}|" th:text="${err.message}">Error message</a>
+                </li>
+            </ul>
+        </div>
+
+        <input type="hidden" th:field="*{version}" th:if="${editing}">
+
+        <div class="field" th:classappend="${#fields.hasErrors('title')} ? 'field-invalid'">
+            <label for="title">Title</label>
+            <p class="field-hint" id="title-hint">For example &ldquo;Complete blood count&rdquo;. 3&ndash;150 characters.</p>
+            <p class="field-error" id="title-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Error</p>
+            <input type="text" th:field="*{title}" required maxlength="150" autocomplete="off"
+                   th:aria-invalid="${#fields.hasErrors('title')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('title')} ? 'title-hint title-error' : 'title-hint'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('recordType')} ? 'field-invalid'">
+            <label for="recordType">Type</label>
+            <p class="field-error" id="recordType-error" th:if="${#fields.hasErrors('recordType')}"
+               th:errors="*{recordType}">Error</p>
+            <select th:field="*{recordType}" required
+                    th:aria-invalid="${#fields.hasErrors('recordType')} ? 'true'"
+                    th:aria-describedby="${#fields.hasErrors('recordType')} ? 'recordType-error'">
+                <option value="">Choose a type</option>
+                <option th:each="type : ${recordTypes}" th:value="${type}" th:text="${type.displayName}">Lab report</option>
+            </select>
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('recordDate')} ? 'field-invalid'">
+            <label for="recordDate">Date of the record</label>
+            <p class="field-hint" id="recordDate-hint">The date on the report or prescription. It can't be in the future.</p>
+            <p class="field-error" id="recordDate-error" th:if="${#fields.hasErrors('recordDate')}"
+               th:errors="*{recordDate}">Error</p>
+            <input type="date" th:field="*{recordDate}" required min="1900-01-01" th:max="${#temporals.createToday()}"
+                   th:aria-invalid="${#fields.hasErrors('recordDate')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('recordDate')} ? 'recordDate-hint recordDate-error' : 'recordDate-hint'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('providerName')} ? 'field-invalid'">
+            <label for="providerName">Provider <span class="muted">(optional)</span></label>
+            <p class="field-hint" id="providerName-hint">The clinic, lab, hospital or doctor.</p>
+            <p class="field-error" id="providerName-error" th:if="${#fields.hasErrors('providerName')}"
+               th:errors="*{providerName}">Error</p>
+            <input type="text" th:field="*{providerName}" maxlength="150" autocomplete="off"
+                   th:aria-invalid="${#fields.hasErrors('providerName')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('providerName')} ? 'providerName-hint providerName-error' : 'providerName-hint'">
+        </div>
+
+        <div class="field" th:classappend="${#fields.hasErrors('notes')} ? 'field-invalid'">
+            <label for="notes">Notes <span class="muted">(optional)</span></label>
+            <p class="field-hint" id="notes-hint">Up to 1000 characters. Only you can see them.</p>
+            <p class="field-error" id="notes-error" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}">Error</p>
+            <textarea th:field="*{notes}" rows="5" maxlength="1000"
+                      th:aria-invalid="${#fields.hasErrors('notes')} ? 'true'"
+                      th:aria-describedby="${#fields.hasErrors('notes')} ? 'notes-hint notes-error' : 'notes-hint'"></textarea>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="button" th:text="${editing} ? 'Save changes' : 'Add record'">Add record</button>
+            <a class="button button-secondary" th:href="${cancel}">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

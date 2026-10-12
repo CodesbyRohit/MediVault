@@ -6,15 +6,73 @@
 </head>
 <body>
 <main id="main-content" tabindex="-1" class="container">
-    <div class="page-header">
-        <p class="eyebrow">Medical records</p>
-        <h1>My records</h1>
-        <p class="muted">Only you can see these records.</p>
+    <div class="page-header page-header-actions">
+        <div>
+            <p class="eyebrow">Medical records</p>
+            <h1>My records</h1>
+            <p class="muted">Only you can see these records.</p>
+        </div>
+        <a class="button" th:href="@{/records/new}">Add a record</a>
     </div>
 
+    <div class="alert alert-success" role="status" th:if="${notice}" th:text="${notice}">Record deleted.</div>
+
+    <form class="form filter-form" th:action="@{/records}" th:object="${search}" method="get" role="search"
+          aria-label="Search and filter records" th:if="${hasAnyRecords}">
+        <div class="error-summary" role="alert" tabindex="-1" th:if="${#fields.hasAnyErrors()}">
+            <h2>Some search options were ignored</h2>
+            <ul>
+                <li th:each="err : ${#fields.detailedErrors()}">
+                    <a th:href="|#${err.fieldName}|" th:text="${err.message}">Error message</a>
+                </li>
+            </ul>
+        </div>
+        <div class="filter-grid">
+            <div class="field filter-wide">
+                <label for="q">Search</label>
+                <input type="search" th:field="*{q}" maxlength="100" placeholder="Title, provider or notes"
+                       autocomplete="off">
+            </div>
+            <div class="field">
+                <label for="type">Type</label>
+                <select th:field="*{type}">
+                    <option value="">All types</option>
+                    <option th:each="t : ${recordTypes}" th:value="${t}" th:text="${t.displayName}">Lab report</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="provider">Provider</label>
+                <select th:field="*{provider}">
+                    <option value="">All providers</option>
+                    <option th:each="p : ${providers}" th:value="${p}" th:text="${p}">Clinic</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="from">From</label>
+                <input type="date" th:field="*{from}">
+            </div>
+            <div class="field">
+                <label for="to">To</label>
+                <input type="date" th:field="*{to}">
+            </div>
+            <div class="field">
+                <label for="sort">Sort by</label>
+                <select th:field="*{sort}">
+                    <option th:each="s : ${sorts}" th:value="${s}" th:text="${s.label}">Newest first</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions">
+            <button type="submit" class="button">Apply</button>
+            <a class="button button-secondary" th:href="@{/records}" th:if="${search.filtered}">Clear filters</a>
+        </div>
+    </form>
+
     <table class="table" th:if="${!records.isEmpty()}">
-        <caption th:text="|${records.size()} ${records.size() == 1 ? 'record' : 'records'}, newest first|">
-            Records, newest first
+        <caption th:text="${page.totalPages > 1}
+                ? |${page.totalElements} ${page.totalElements == 1 ? 'record' : 'records'}, page ${page.number + 1} of ${page.totalPages}|
+                : |${page.totalElements} ${page.totalElements == 1 ? 'record' : 'records'}|">
+            Records
         </caption>
         <thead>
         <tr>
@@ -22,10 +80,11 @@
             <th scope="col">Type</th>
             <th scope="col">Date</th>
             <th scope="col">Provider</th>
+            <th scope="col">Documents</th>
         </tr>
         </thead>
         <tbody>
-        <tr th:each="record : ${records}">
+        <tr th:each="record : ${records}" th:with="docs=${documentCounts.get(record.id)}">
             <td data-label="Title">
                 <a th:href="@{/records/{id}(id=${record.id})}" th:text="${record.title}">Record title</a>
             </td>
@@ -35,13 +94,27 @@
                       th:text="${#temporals.format(record.recordDate, 'd MMM yyyy')}">1 Jan 2026</time>
             </td>
             <td data-label="Provider" th:text="${record.providerName} ?: 'Not recorded'">Provider</td>
+            <td data-label="Documents" th:text="${docs == null} ? 'None' : (${docs == 1} ? '1 PDF' : |${docs} PDFs|)">None</td>
         </tr>
         </tbody>
     </table>
 
-    <div class="empty-state" th:if="${records.isEmpty()}">
+    <nav class="pagination" aria-label="Pages" th:if="${page.totalPages > 1}">
+        <a th:if="${page.hasPrevious()}" th:href="@{${search.pageUrl(page.number - 1)}}" rel="prev">&larr; Previous</a>
+        <span aria-current="page" th:text="|Page ${page.number + 1} of ${page.totalPages}|">Page 1 of 2</span>
+        <a th:if="${page.hasNext()}" th:href="@{${search.pageUrl(page.number + 1)}}" rel="next">Next &rarr;</a>
+    </nav>
+
+    <div class="empty-state" th:if="${records.isEmpty() and hasAnyRecords}">
+        <h2>No matching records</h2>
+        <p>No records match these search options.</p>
+        <p><a th:href="@{/records}">Clear the filters</a> to see all your records.</p>
+    </div>
+
+    <div class="empty-state" th:if="${!hasAnyRecords}">
         <h2>No records yet</h2>
-        <p>You don't have any medical records yet. Adding records will be available in a future version.</p>
+        <p>You don't have any medical records yet.</p>
+        <p><a class="button" th:href="@{/records/new}">Add your first record</a></p>
     </div>
 </main>
 </body>

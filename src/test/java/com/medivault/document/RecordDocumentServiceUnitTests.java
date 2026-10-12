@@ -54,7 +54,8 @@ class RecordDocumentServiceUnitTests {
 	 */
 	@Test
 	void theUploadedFileIsDeletedOnlyAfterADefiniteRollback() {
-		DocumentStorage storage = new DocumentStorage(tempDir.resolve("records"), 1024 * 1024, UUID::randomUUID);
+		DocumentStorage storage = new DocumentStorage(tempDir.resolve("records"), 1024 * 1024, UUID::randomUUID,
+				com.medivault.document.crypto.TestKeys.newCipher());
 		String unknown = storage.store(new ByteArrayInputStream(FictionalPdf.bytes("Unknown outcome"))).key();
 		String committed = storage.store(new ByteArrayInputStream(FictionalPdf.bytes("Committed"))).key();
 		String rolledBack = storage.store(new ByteArrayInputStream(FictionalPdf.bytes("Rolled back"))).key();

@@ -22,6 +22,9 @@
 		     11.7.2 only tests MySQL up to 8.1; 11.20.3 covers 8.4. Accepted only if the build,
 		     full test suite and real MySQL 8.4 migrations (medivault_it, then medivault_dev) pass. -->
 		<flyway.version>11.20.3</flyway.version>
+		<!-- Google Tink for encrypted PDF storage (Phase C): StreamingAead AES256_GCM_HKDF_1MB. Not managed by
+		     Spring Boot. 1.23.0 (2026-07-09) targets Java 11 bytecode; its gson 2.13.2 equals Boot's managed version. -->
+		<tink.version>1.23.0</tink.version>
 	</properties>
 
 	<dependencies>
@@ -68,6 +71,13 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-mysql</artifactId>
+		</dependency>
+
+		<!-- Authenticated encryption of stored PDFs (see README, "Document encryption") -->
+		<dependency>
+			<groupId>com.google.crypto.tink</groupId>
+			<artifactId>tink</artifactId>
+			<version>${tink.version}</version>
 		</dependency>
 
 		<!-- In-memory H2: used by tests and by the explicit "local-h2" profile only.

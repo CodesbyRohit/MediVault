@@ -12,6 +12,13 @@
         <h1 th:text="${record.title}">Record title</h1>
     </div>
 
+    <div class="alert alert-success" role="status" th:if="${notice}" th:text="${notice}">Changes saved.</div>
+
+    <div class="actions">
+        <a class="button button-secondary" th:href="@{/records/{id}/edit(id=${record.id})}">Edit record</a>
+        <a class="button button-danger" th:href="@{/records/{id}/delete(id=${record.id})}">Delete record</a>
+    </div>
+
     <dl class="details">
         <dt>Type</dt>
         <dd th:text="${record.recordType.displayName}">Type</dd>
@@ -23,7 +30,17 @@
         <dt>Provider</dt>
         <dd th:text="${record.providerName} ?: 'Not recorded'">Provider</dd>
         <dt>Notes</dt>
-        <dd th:text="${record.notes} ?: 'No notes'">Notes</dd>
+        <dd class="preserve-lines" th:text="${record.notes} ?: 'No notes'">Notes</dd>
+        <dt>Added</dt>
+        <dd>
+            <time th:datetime="${record.createdAt}"
+                  th:text="${#temporals.format(record.createdAt, 'd MMM yyyy, HH:mm')}">1 Jan 2026, 10:00</time>
+        </dd>
+        <dt>Last updated</dt>
+        <dd>
+            <time th:datetime="${record.updatedAt}"
+                  th:text="${#temporals.format(record.updatedAt, 'd MMM yyyy, HH:mm')}">1 Jan 2026, 10:00</time>
+        </dd>
     </dl>
 
     <section class="section" aria-labelledby="documents-heading">
@@ -45,6 +62,9 @@
                     &middot; uploaded
                     <time th:datetime="${document.uploadedAt}"
                           th:text="${#temporals.format(document.uploadedAt, 'd MMM yyyy, HH:mm')}">1 Jan 2026, 10:00</time>
+                    &middot;
+                    <a th:href="@{/records/{recordId}/documents/{documentId}/delete(recordId=${record.id},documentId=${document.id})}"
+                       th:aria-label="|Delete ${document.filename}|">Delete</a>
                 </span>
             </li>
         </ul>

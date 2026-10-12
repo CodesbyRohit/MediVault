@@ -14,7 +14,8 @@ public class DocumentRejectedException extends RuntimeException {
 		NOT_PDF_TYPE("Only PDF files can be uploaded."),
 		NOT_PDF_CONTENT("The file is not a PDF document."),
 		MALFORMED("The PDF file appears to be damaged or incomplete."),
-		TOO_LARGE("The file is too large.");
+		TOO_LARGE("The file is too large."),
+		QUOTA_EXCEEDED("There is not enough document storage left for this file.");
 
 		private final String message;
 

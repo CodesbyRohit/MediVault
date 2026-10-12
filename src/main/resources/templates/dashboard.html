@@ -6,9 +6,12 @@
 </head>
 <body>
 <main id="main-content" tabindex="-1" class="container">
-    <div class="page-header">
-        <p class="eyebrow">Dashboard</p>
-        <h1 th:text="|Welcome, ${fullName}|">Welcome, Patient</h1>
+    <div class="page-header page-header-actions">
+        <div>
+            <p class="eyebrow">Dashboard</p>
+            <h1 th:text="|Welcome, ${fullName}|">Welcome, Patient</h1>
+        </div>
+        <a class="button" th:href="@{/records/new}">Add a record</a>
     </div>
 
     <div class="card-grid">
@@ -17,6 +20,15 @@
             <p class="stat" th:text="${recordCount}">0</p>
             <p class="muted" th:text="${recordCount == 1} ? 'medical record stored' : 'medical records stored'">
                 medical records stored</p>
+        </section>
+
+        <section class="card" aria-labelledby="documents-title">
+            <h2 id="documents-title">Documents</h2>
+            <p class="stat" th:text="${storage.documentCount}">0</p>
+            <p class="muted">
+                <span th:text="${storage.documentCount == 1} ? 'PDF attached' : 'PDFs attached'">PDFs attached</span>
+                &middot; <span th:text="|${storage.usedLabel()} of ${storage.quotaLabel()} used|">0 bytes of 100 MB used</span>
+            </p>
         </section>
 
         <section class="card" aria-labelledby="recent-title">
@@ -32,12 +44,37 @@
                 </li>
             </ul>
             <p th:if="${recentRecords.isEmpty()}">You don't have any medical records yet.</p>
+            <p th:if="${recordCount > 0}"><a th:href="@{/records}">View all your records</a></p>
+        </section>
+    </div>
+
+    <div class="card-grid" th:if="${recordCount > 0}">
+        <section class="card" aria-labelledby="types-title">
+            <h2 id="types-title">Records by type</h2>
+            <ul class="type-counts">
+                <li th:each="entry : ${typeCounts}">
+                    <a th:href="@{/records(type=${entry.key})}" th:text="${entry.key.displayName}">Lab report</a>
+                    <meter min="0" th:max="${recordCount}" th:value="${entry.value}" aria-hidden="true"></meter>
+                    <span th:text="${entry.value}">2</span>
+                </li>
+            </ul>
         </section>
 
-        <section class="card" aria-labelledby="next-title">
-            <h2 id="next-title">What's next</h2>
-            <p><a th:href="@{/records}">View all your records</a></p>
-            <p class="muted">Adding records and uploading PDF reports will arrive in a future version.</p>
+        <section class="card" aria-labelledby="uploads-title">
+            <h2 id="uploads-title">Recently uploaded</h2>
+            <ul class="record-list" th:if="${!recentDocuments.isEmpty()}">
+                <li th:each="document : ${recentDocuments}">
+                    <a th:href="@{/records/{id}(id=${document.recordId})}" th:text="${document.filename}">report.pdf</a>
+                    <span class="record-meta">
+                        <span th:text="${document.recordTitle}">Record title</span> &middot;
+                        <span th:text="${document.sizeLabel}">12 KB</span> &middot;
+                        <time th:datetime="${document.uploadedAt}"
+                              th:text="${#temporals.format(document.uploadedAt, 'd MMM yyyy')}">1 Jan 2026</time>
+                    </span>
+                </li>
+            </ul>
+            <p class="muted" th:if="${recentDocuments.isEmpty()}">
+                No PDFs yet. Open a record to attach one.</p>
         </section>
     </div>
 </main>

@@ -131,7 +131,7 @@ class LocalFileProfileTests {
 
 			Flyway flyway = context.getBean(Flyway.class);
 			assertThat(flyway.info().applied()).extracting(info -> info.getVersion().getVersion())
-				.containsExactly("1", "2");
+				.containsExactly("1", "2", "3", "4");
 			assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
 			assertThat(environment.getProperty("spring.flyway.clean-disabled")).isEqualTo("true");
 			assertThat(environment.getProperty("spring.h2.console.enabled")).isEqualTo("false");
@@ -310,7 +310,7 @@ class LocalFileProfileTests {
 			}
 
 			Flyway flyway = second.getBean(Flyway.class);
-			assertThat(flyway.info().applied()).hasSize(2).extracting(MigrationInfo::getInstalledRank).containsExactly(1, 2);
+			assertThat(flyway.info().applied()).hasSize(4).extracting(MigrationInfo::getInstalledRank).containsExactly(1, 2, 3, 4);
 			assertThat(flyway.info().pending()).isEmpty();
 		}
 		assertThat(Files.readAttributes(database, BasicFileAttributes.class).creationTime())

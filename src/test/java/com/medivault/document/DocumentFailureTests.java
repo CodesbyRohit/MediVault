@@ -100,7 +100,8 @@ class DocumentFailureTests extends IntegrationTestSupport {
 
 		assertThat(documentRepository.count()).isEqualTo(1);
 		assertThat(storedFiles()).as("the new file is removed; the earlier one is untouched").isEqualTo(before);
-		try (var in = storage.open(existing.getStorageKey())) {
+		try (var in = storage.openVerified(existing.getStorageFormat(), existing.getStorageKey(), existing.getSizeBytes(),
+				existing.getSha256())) {
 			assertThat(in.readAllBytes()).isEqualTo(PDF.getBytes());
 		}
 	}
@@ -142,7 +143,8 @@ class DocumentFailureTests extends IntegrationTestSupport {
 			.andExpect(status().isOk())
 			.andExpect(content().bytes(PDF.getBytes()));
 
-		assertThat(closed).hasSize(3).allSatisfy(flag -> assertThat(flag).as("stream closed").isTrue());
+		// Each download opens the file twice: a full verification pass, then the streamed pass.
+		assertThat(closed).hasSize(6).allSatisfy(flag -> assertThat(flag).as("stream closed").isTrue());
 	}
 
 	@Test

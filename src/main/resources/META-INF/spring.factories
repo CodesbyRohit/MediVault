@@ -1,2 +1,5 @@
 org.springframework.boot.env.EnvironmentPostProcessor=\
+com.medivault.config.HostedProfileGuard,\
 com.medivault.config.DatabaseSafetyGuard
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.medivault.config.StartupRefusalFailureAnalyzer

@@ -15,10 +15,29 @@ A personal medical records vault built by **Rohit Srivastava** as a Java + Entre
 > (see [Document encryption key](#document-encryption-key)); the **database is not encrypted**, so record titles and
 > notes are plain data on disk. This is encryption at rest on the server, **not end-to-end encryption**.
 
-## Quick start: no MySQL needed
+## Quick start: one command (Windows)
 
-Prerequisites: **JDK 17 or newer** with `JAVA_HOME` set. Maven is not needed: the included Maven Wrapper downloads
-it (checksum-verified) on first use. Nothing else is required.
+Prerequisites: **JDK 17 or newer** with `JAVA_HOME` set. Nothing else: no MySQL, no Maven install.
+
+```powershell
+cd <the MediVault project folder>
+.\run-demo.cmd               # disposable demo: fresh every start (profiles local-h2,demo)
+.\run-demo.cmd persistent    # data survives restarts, in %LOCALAPPDATA%\MediVault (profiles local-file,demo)
+```
+
+In Command Prompt, type `run-demo.cmd` without the `.\`. When the log shows `Tomcat started on port 8080`, open
+http://localhost:8080, register a patient (you get 3 fictional sample records), and attach a fictional PDF to a
+record. Stop the app with `Ctrl+C`.
+
+`run-demo.cmd` builds the app (tests skipped; run `.\mvnw.cmd test` for them). On the first run only, it creates
+the document encryption key with MediVault's own `document-key` tool in
+`%USERPROFILE%\MediVault-keys\document-key.json`, unless `MEDIVAULT_DOCUMENT_KEY_FILE` already names a key file.
+It then starts the server. It never overwrites a key file. If a start is refused, MediVault prints a short
+"APPLICATION FAILED TO START" report saying which safety check failed.
+
+## Quick start: manual steps
+
+Maven is not needed: the included Maven Wrapper downloads it (checksum-verified) on first use.
 
 ```powershell
 cd <the MediVault project folder>
@@ -379,6 +398,31 @@ clearly labelled fictional sample records:
   swapped, or unreadable with the current key file) is never sent: a generic error page is shown, and a log line
   names only the document id and the reason.
 
+## Hosted demo profile (`railway`, Stage 1)
+
+> **Fictional data only. Not deployed yet:** the deployment, key-management and disk-fill steps are still to be
+> approved and documented.
+
+`railway` is a small overlay for running the `local-file` setup on Railway. Start it with exactly
+`SPRING_PROFILES_ACTIVE=local-file,railway`, in that order. `local-file` still provides the storage, the encrypted
+PDFs and all its safety rules. Set `MEDIVAULT_STORAGE_ROOT` to a folder on the service's persistent volume, and
+`MEDIVAULT_DOCUMENT_KEY_FILE` as for any other profile. `railway` only changes how the server is reached:
+
+| Setting | Value | Why |
+|---|---|---|
+| `server.address` | `0.0.0.0` | Railway connects to the container's network interface (`local-file` alone listens on 127.0.0.1 only) |
+| `server.port` | `${PORT:8080}` | Railway passes the port in `PORT` |
+| `server.forward-headers-strategy` | `native` | HTTPS ends at Railway's proxy. Tomcat applies its `X-Forwarded-*` headers for internal (private-range) proxy addresses, so the app sees HTTPS: an HSTS header is sent and redirects use `https://` |
+| `server.servlet.session.cookie.secure` | `true` | The session cookie is always `Secure` |
+
+`HostedProfileGuard` refuses to start with `railway` if:
+- `local-file` is missing or listed after `railway`;
+- `demo` is active (a hosted instance never creates sample records);
+- either of the last two settings above is changed.
+
+`RailwayProfileTests` checks this with a real server on 127.0.0.1. Whether Railway's own proxy address counts as
+internal can only be checked after deployment: the live site must send a `Strict-Transport-Security` header.
+
 ## Run against MySQL 8.4 (`mysql` profile, Milestone 2)
 
 > ⚠️ **Use an isolated MySQL 8.4 instance on 127.0.0.1 and an explicitly chosen port.** MediVault refuses to
@@ -525,7 +569,8 @@ If you saved any of them permanently for your Windows user, remove each one like
 src/main/java/com/medivault/
   admin/      read-only user list, admin bootstrap
   config/     DatabaseSafetyGuard + MySqlUrlPolicy + LocalFileStoragePolicy (database profile, H2, storage
-              location and MySQL connection rules, enforced before any connection)
+              location and MySQL connection rules, enforced before any connection); HostedProfileGuard
+              ("railway" profile rules); StartupRefusalFailureAnalyzer (short report for refused starts)
   demo/       optional fictional demo records ("demo" + "local-file" or "local-h2")
   document/   PDF documents: metadata entity, private encrypted file storage, upload/download controller
   document/crypto/  document key file loading and checks, encrypted container (Tink), document-key tool
@@ -538,6 +583,7 @@ src/main/resources/
   application-local-file.properties   "local-file" profile (file-backed H2 + PDF folder, Flyway + validate)
   application-local-h2.properties     "local-h2" profile (in-memory H2, Flyway off)
   application-mysql.properties        "mysql" profile (MySQL 8.4 via env vars, Flyway + Hibernate validate)
+  application-railway.properties      "railway" overlay for the hosted demo ("local-file,railway")
   db/migration/h2/                    Flyway migrations for "local-file" (V1 baseline, V2 record_documents, V3 record version,
                                       V4 document encryption)
   db/migration/mysql/                 Flyway migrations for "mysql" (V1–V4, same content)
@@ -546,4 +592,5 @@ src/main/resources/
 src/test/java/com/medivault/        H2-backed integration and unit tests
 src/test/java/com/medivault/mysql/  opt-in MySQL 8.4 tests (skipped unless MEDIVAULT_IT_DB_URL is set)
 docs/                               requirements
+run-demo.cmd                        one-command Windows launcher (build, key on first run, start)
 ```

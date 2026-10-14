@@ -39,6 +39,13 @@
   --glass-edge: rgba(11, 31, 51, 0.08);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --glass-blur: blur(14px) saturate(150%);
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --motion-fast: 120ms;            /* colour and shadow changes only; switched off for reduced motion */
+  --ease: ease;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -233,7 +240,7 @@ a:hover {
   font-weight: 500;
   text-decoration: none;
   border-radius: 999px;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition: background-color var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
 }
 
 .nav-list a:not(.button):hover,
@@ -284,7 +291,7 @@ a:hover {
   border-radius: var(--radius);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(11, 31, 51, 0.16);
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: background-color var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease);
 }
 
 .button:hover {
@@ -447,6 +454,8 @@ a:hover {
 
 .card-stat {
   border-top: 3px solid var(--color-primary);
+  /* Size to the counter, not to the tallest card in the row (the "Recently added" list). */
+  align-self: start;
 }
 
 .steps {
@@ -501,7 +510,7 @@ a:hover {
   background: var(--color-surface);
   border: 2px solid var(--color-control-border);
   border-radius: var(--radius);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: border-color var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease);
 }
 
 .field textarea {
@@ -528,7 +537,12 @@ a:hover {
   color: var(--color-error);
 }
 
-.field-error::before {
+/* One "Error:" prefix per message: a field with two messages shows each on its own line, both prefixed. */
+.field-error-message {
+  display: block;
+}
+
+.field-error-message::before {
   content: "Error: ";
 }
 
@@ -651,6 +665,11 @@ a:hover {
   margin-bottom: 0;
 }
 
+/* Inside a card (the dashboard's "Recently added"), the empty state is a little more compact. */
+.card .empty-state {
+  padding: var(--space-lg) var(--space-md);
+}
+
 .record-list {
   margin: 0;
   padding: 0;
@@ -697,8 +716,36 @@ a:hover {
   padding: 0.35rem 0;
 }
 
+/* Teal bars on a pale track instead of the browser's default green. The bars are decorative
+   (aria-hidden); the count is always shown as text next to them. */
 .type-counts meter {
   width: 100%;
+  height: 0.6rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: var(--color-primary-soft);
+  border: 1px solid rgba(11, 95, 122, 0.25);
+  border-radius: 999px;
+}
+
+.type-counts meter::-webkit-meter-bar {
+  height: 0.6rem;
+  background: var(--color-primary-soft);
+  border: 0;
+  border-radius: 999px;
+}
+
+.type-counts meter::-webkit-meter-optimum-value,
+.type-counts meter::-webkit-meter-suboptimum-value,
+.type-counts meter::-webkit-meter-even-less-good-value {
+  background: var(--color-primary);
+  border-radius: 999px;
+}
+
+.type-counts meter::-moz-meter-bar {
+  background: var(--color-primary);
+  border-radius: 999px;
 }
 
 .table {
@@ -709,7 +756,24 @@ a:hover {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   box-shadow: var(--shadow);
-  overflow: hidden;
+}
+
+/* Rounded corners come from the corner cells, not overflow: hidden, so the caption and the focus
+   outlines of links in the table can never be clipped. */
+.table thead tr:first-child th:first-child {
+  border-top-left-radius: calc(var(--radius-surface) - 1px);
+}
+
+.table thead tr:first-child th:last-child {
+  border-top-right-radius: calc(var(--radius-surface) - 1px);
+}
+
+.table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: calc(var(--radius-surface) - 1px);
+}
+
+.table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: calc(var(--radius-surface) - 1px);
 }
 
 .table caption {
@@ -740,7 +804,8 @@ a:hover {
   background: var(--color-surface-alt);
 }
 
-.table tbody tr:hover {
+/* On the cells, so the tint follows the rounded corner cells. */
+.table tbody tr:hover td {
   background: #f7fafc;
 }
 
@@ -782,6 +847,15 @@ a:hover {
     padding-block: 0.35rem;
   }
 
+  /* Stacked cells: only the very last one rounds the bottom of the table. */
+  .table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 0;
+  }
+
+  .table tbody tr:last-child td:last-child {
+    border-radius: 0 0 calc(var(--radius-surface) - 1px) calc(var(--radius-surface) - 1px);
+  }
+
   .table td::before {
     content: attr(data-label);
     display: block;
@@ -789,6 +863,11 @@ a:hover {
     font-weight: 600;
     color: var(--color-muted);
   }
+}
+
+/* Record detail page: space between the Edit/Delete buttons and the details panel (was 0 px). */
+.actions + .details {
+  margin-top: var(--space-lg);
 }
 
 .details {
@@ -948,8 +1027,26 @@ a:hover {
     grid-template-columns: repeat(3, 1fr);
   }
 
+  /* A row of exactly two cards (the dashboard's second row) fills the width instead of leaving a gap.
+     Browsers without :has() keep the three-column grid. */
+  .card-grid:has(> :nth-child(2):last-child) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .form {
     padding: 1.75rem;
+  }
+
+  /* Record details: label and value side by side, which is easier to scan than a single column. */
+  .details {
+    display: grid;
+    grid-template-columns: minmax(8rem, 11rem) 1fr;
+    gap: var(--space-sm) var(--space-lg);
+    align-items: baseline;
+  }
+
+  .details dd {
+    margin: 0;
   }
 }
 

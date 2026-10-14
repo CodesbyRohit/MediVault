@@ -81,9 +81,10 @@ class RecordOwnershipTests extends IntegrationTestSupport {
 	}
 
 	@Test
-	void dashboardCountsAndListsOnlyOwnRecordsWithAtMostThreeRecent() throws Exception {
+	void dashboardCountsAndListsOnlyOwnRecordsWithTheThreeMostRecentlyAdded() throws Exception {
 		User asha = createPatient("Asha Fictional", "asha@example.test");
 		User ravi = createPatient("Ravi Fictional", "ravi@example.test");
+		// Added in order 1..4; record 4 has the oldest record date but was added last.
 		for (int i = 1; i <= 4; i++) {
 			createRecord(asha, "Asha report " + i, LocalDate.now().minusDays(i));
 		}
@@ -93,9 +94,9 @@ class RecordOwnershipTests extends IntegrationTestSupport {
 			.andExpect(status().isOk())
 			.andExpect(model().attribute("recordCount", 4L))
 			.andExpect(content().string(allOf(
-					containsString("Asha report 1"),
-					containsString("Asha report 3"),
-					not(containsString("Asha report 4")),
+					containsString("Asha report 4"),
+					containsString("Asha report 2"),
+					not(containsString("Asha report 1")),
 					not(containsString("Ravi private report")))));
 	}
 

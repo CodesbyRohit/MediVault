@@ -2,8 +2,11 @@
 REM ---------------------------------------------------------------------------
 REM MediVault one-command launcher (Windows). Run from a terminal:
 REM
-REM   run-demo.cmd              disposable demo  (profiles local-h2,demo; data is forgotten on stop)
-REM   run-demo.cmd persistent   persistent local (profiles local-file,demo; data kept in %LOCALAPPDATA%\MediVault)
+REM   run-demo.cmd              disposable demo  (profile local-h2; ALL data is forgotten on stop)
+REM   run-demo.cmd persistent   persistent local (profile local-file; data kept in %LOCALAPPDATA%\MediVault)
+REM
+REM New accounts always start empty: no sample records are created. Use "persistent" whenever
+REM records must survive a restart.
 REM
 REM It builds the app, creates the document encryption key once with MediVault's own
 REM "document-key" tool (owner-only, outside the storage folder, never overwritten), and starts
@@ -13,9 +16,9 @@ setlocal
 cd /d "%~dp0"
 
 set "PROFILES="
-if "%~1"=="" set "PROFILES=local-h2,demo"
-if /i "%~1"=="demo" set "PROFILES=local-h2,demo"
-if /i "%~1"=="persistent" set "PROFILES=local-file,demo"
+if "%~1"=="" set "PROFILES=local-h2"
+if /i "%~1"=="demo" set "PROFILES=local-h2"
+if /i "%~1"=="persistent" set "PROFILES=local-file"
 if not defined PROFILES (
     echo Usage: run-demo.cmd [demo^|persistent]
     exit /b 2
@@ -57,6 +60,7 @@ if exist "%MEDIVAULT_DOCUMENT_KEY_FILE%" (
 
 echo [3/3] Starting MediVault with profiles %PROFILES% ...
 echo       When the log shows "Tomcat started on port 8080", open http://localhost:8080
-echo       Register a patient: you get 3 fictional sample records. Stop with Ctrl+C.
+echo       Register a patient: the account starts empty; add records from the dashboard. Stop with Ctrl+C.
+if /i "%PROFILES%"=="local-h2" echo       Disposable mode: everything is forgotten on stop. Use "run-demo.cmd persistent" to keep records.
 echo.
 java -jar "%JAR%" --spring.profiles.active=%PROFILES%

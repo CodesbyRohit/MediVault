@@ -48,8 +48,9 @@ public class MedicalRecordService {
 		return recordRepository.findAllByOwnerIdOrderByRecordDateDescIdDesc(ownerId);
 	}
 
+	/** The owner's three most recently added records, newest first (by creation time, then id). */
 	public List<MedicalRecord> recentForOwner(Long ownerId) {
-		return recordRepository.findTop3ByOwnerIdOrderByRecordDateDescIdDesc(ownerId);
+		return recordRepository.findTop3ByOwnerIdOrderByCreatedAtDescIdDesc(ownerId);
 	}
 
 	public long countForOwner(Long ownerId) {

@@ -21,13 +21,16 @@ Prerequisites: **JDK 17 or newer** with `JAVA_HOME` set. Nothing else: no MySQL,
 
 ```powershell
 cd <the MediVault project folder>
-.\run-demo.cmd               # disposable demo: fresh every start (profiles local-h2,demo)
-.\run-demo.cmd persistent    # data survives restarts, in %LOCALAPPDATA%\MediVault (profiles local-file,demo)
+.\run-demo.cmd               # disposable: everything is forgotten when the app stops (profile local-h2)
+.\run-demo.cmd persistent    # keeps accounts, records and PDFs in %LOCALAPPDATA%\MediVault (profile local-file)
 ```
 
 In Command Prompt, type `run-demo.cmd` without the `.\`. When the log shows `Tomcat started on port 8080`, open
-http://localhost:8080, register a patient (you get 3 fictional sample records), and attach a fictional PDF to a
-record. Stop the app with `Ctrl+C`.
+http://localhost:8080 and register a patient. **A new account starts empty**: the dashboard shows no records until
+you add one (*Add your first record*), and then lists your own records, most recently added first. Attach a
+fictional PDF to a record. Stop the app with `Ctrl+C`.
+
+**Use `persistent` whenever records must survive a restart.** The default mode keeps everything in memory only.
 
 `run-demo.cmd` builds the app (tests skipped; run `.\mvnw.cmd test` for them). On the first run only, it creates
 the document encryption key with MediVault's own `document-key` tool in
@@ -49,14 +52,13 @@ java -jar target\medivault-0.0.1-SNAPSHOT.jar document-key generate "$env:USERPR
 $env:MEDIVAULT_DOCUMENT_KEY_FILE = "$env:USERPROFILE\MediVault-keys\document-key.json"
 
 # A) Persistent local mode: data and PDFs survive restarts (stored in %LOCALAPPDATA%\MediVault)
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-file,demo"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-file"
 
-# B) Disposable demo mode: everything is forgotten when the app stops
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-h2,demo"
+# B) Disposable mode: everything is forgotten when the app stops
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-h2"
 
 # Open http://localhost:8080 on this computer. Stop the app with Ctrl+C.
-# Register a patient, log in, open one of the 3 fictional sample records, and attach a fictional PDF.
-# Leave out ",demo" to start without sample records.
+# Register a patient (the account starts empty), add a record and attach a fictional PDF.
 
 # Run the tests (in-memory H2, temporary folders and a throwaway key under target\; no MySQL,
 # never touches your local data or your real key)
@@ -87,7 +89,8 @@ always starts with its own, initially empty database. Nothing is copied between 
   most 72 bytes (BCrypt's input limit; accented letters and emoji use 2–4 bytes each).
 - Login and logout with Spring Security (email + password, CSRF-protected, logout by POST only)
 - Patient dashboard built only from the patient's own data: record and document counts, storage used, records by
-  type, latest records and recent uploads.
+  type, the three most recently added records (newest first) and recent uploads. A new account starts empty and
+  the dashboard offers *Add your first record*.
 - **Owner-only medical records:** create, view, edit and delete, with server-side validation (title 3–150
   characters, a type, a date that is not in the future and not before 1900, optional provider and notes). Deleting
   asks for confirmation on a separate page, so it also works without JavaScript. An edit made from an outdated copy
@@ -99,7 +102,8 @@ always starts with its own, initially empty database. Nothing is copied between 
   record, download them again and delete them. Only the owner can list, download or delete them; another patient
   gets 404 and an admin gets 403.
 - Read-only admin user list. Admins cannot see medical record content or documents.
-- Optional admin bootstrap from environment variables, plus optional fictional demo records
+- Optional admin bootstrap from environment variables, plus opt-in fictional demo records for the disposable
+  in-memory mode only (never created by `run-demo.cmd`)
 - Persistent local storage (`local-file`) or a disposable in-memory demo (`local-h2`), both without MySQL
 
 ## Tech stack
@@ -139,7 +143,7 @@ about MySQL.
 ## Persistent local mode (`local-file` profile)
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-file"        # or "local-file,demo"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-file"
 ```
 
 Stop with `Ctrl+C` and start again with the same command: accounts, records and PDFs are still there.
@@ -285,8 +289,11 @@ the app and move the folder aside (keep it until you are sure):
 Rename-Item "$env:LOCALAPPDATA\MediVault" "MediVault-old-$(Get-Date -Format yyyyMMdd-HHmmss)"
 ```
 
-The next start creates an empty database. With `,demo`, each patient who registers gets the 3 fictional sample
-records again (once per account; restarts never add more, and existing accounts are never changed).
+The next start creates an empty database, and newly registered patients start without records.
+
+Databases created with an earlier version of `run-demo.cmd persistent` (which enabled `demo`) may still contain
+the 3 sample records per account: titles starting with "Sample:" and the provider "Demo Health Centre
+(fictional)". MediVault never removes them automatically; delete them in the app if you don't want them.
 
 ### Interrupted uploads and leftover files
 
@@ -360,21 +367,20 @@ Then open http://localhost:8080 and stop the app with `Ctrl+C`.
 - Uploaded PDFs go to `%TEMP%\medivault-local-h2\records`. Their database rows vanish when the app stops, so these
   fictional files are disposable leftovers and can be deleted at any time while the app is stopped.
 
-### Optional: fictional demo records (`demo` + `local-file` or `local-h2`)
+### Optional: fictional demo records (`demo` + `local-h2` only)
 
-Add the `demo` profile **together with `local-file` or `local-h2`** to give each **newly registered** patient 3
-clearly labelled fictional sample records:
+New accounts start empty in every normal run, and `run-demo.cmd` never enables `demo`. Only when you explicitly add
+`demo` **to the disposable in-memory `local-h2` profile** does each **newly registered** patient get 3 clearly
+labelled fictional sample records:
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-file,demo"
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local-h2,demo"
 ```
 
-- **Off by default.** `demo` alone (or with `mysql`) creates **no** records and logs a warning saying so. The
-  startup guard pins both local profiles to H2, so demo records can never be written to MySQL.
+- **Off by default.** `demo` alone, or with `local-file` or `mysql`, creates **no** records and logs a warning saying
+  so. Sample records can therefore never be written to the persistent `local-file` database or to MySQL.
 - A warning is logged at startup while demo mode is active.
-- Each account is seeded at most once, at registration. Accounts that already have records are skipped, so
-  restarting `local-file,demo` never duplicates samples. No existing account, password or role is changed.
+- Each account is seeded at most once, at registration. No existing account, password or role is changed.
 - Demo mode creates no PDF files. To try uploads, use any fictional PDF (for example, print a page saying
   "FICTIONAL SAMPLE" with *Microsoft Print to PDF*).
 - **To disable it,** start without `demo`.
@@ -571,7 +577,7 @@ src/main/java/com/medivault/
   config/     DatabaseSafetyGuard + MySqlUrlPolicy + LocalFileStoragePolicy (database profile, H2, storage
               location and MySQL connection rules, enforced before any connection); HostedProfileGuard
               ("railway" profile rules); StartupRefusalFailureAnalyzer (short report for refused starts)
-  demo/       optional fictional demo records ("demo" + "local-file" or "local-h2")
+  demo/       opt-in fictional demo records ("demo" + "local-h2" only)
   document/   PDF documents: metadata entity, private encrypted file storage, upload/download controller
   document/crypto/  document key file loading and checks, encrypted container (Tink), document-key tool
   record/     medical records: entity, owner-scoped queries, dashboard and record pages

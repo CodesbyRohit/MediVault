@@ -27,7 +27,8 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
 
 	List<MedicalRecord> findAllByOwnerIdOrderByRecordDateDescIdDesc(Long ownerId);
 
-	List<MedicalRecord> findTop3ByOwnerIdOrderByRecordDateDescIdDesc(Long ownerId);
+	/** The three most recently added records; the id breaks ties between identical timestamps. */
+	List<MedicalRecord> findTop3ByOwnerIdOrderByCreatedAtDescIdDesc(Long ownerId);
 
 	Optional<MedicalRecord> findByIdAndOwnerId(Long id, Long ownerId);
 

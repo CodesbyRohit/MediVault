@@ -22,19 +22,19 @@ import com.medivault.user.UserRepository;
 
 /**
  * Adds three clearly labelled, FICTIONAL sample records to each patient who registers while the
- * {@code demo} profile is active together with one of the local H2 profiles ({@code local-h2} or
- * {@code local-file}). The bean does not exist otherwise, so demo data can never be written to a
- * MySQL database ({@code DatabaseSafetyGuard} pins both local profiles to H2).
+ * {@code demo} profile is explicitly active together with the disposable in-memory {@code local-h2}
+ * profile. The bean does not exist otherwise: not in the normal workflow ({@code run-demo.cmd} never
+ * enables {@code demo}), not with the persistent {@code local-file} database, and not with MySQL, so
+ * sample records can never be written to a database that keeps data.
  * <p>
  * Seeding happens at most once per account, at registration: an account that already has records is
- * skipped, so restarting with a persistent database never duplicates samples. Existing accounts,
- * passwords and roles are never changed.
+ * skipped. Existing accounts, passwords and roles are never changed.
  */
 @Component
 @Profile(DemoRecordSeeder.PROFILE_EXPRESSION)
 public class DemoRecordSeeder {
 
-	static final String PROFILE_EXPRESSION = "demo & (local-h2 | local-file)";
+	static final String PROFILE_EXPRESSION = "demo & local-h2";
 
 	private static final Logger log = LoggerFactory.getLogger(DemoRecordSeeder.class);
 

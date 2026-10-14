@@ -32,6 +32,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.medivault.demo.DemoProfileIgnoredWarning;
 import com.medivault.demo.DemoRecordSeeder;
 import com.medivault.document.FictionalPdf;
 import com.medivault.document.RecordDocumentService;
@@ -318,30 +319,29 @@ class LocalFileProfileTests {
 	}
 
 	@Test
-	void demoSamplesAreCreatedOnceAndRestartsNeverDuplicateThem() {
+	void theDemoProfileNeverSeedsThePersistentDatabaseAndRealRecordsSurviveARestart() {
 		Path root = tempDir.resolve("MediVault");
-		Long firstId;
-		String firstHash;
+		Long patientId;
 		try (ConfigurableApplicationContext first = start(root, "local-file,demo")) {
-			User patient = first.getBean(RegistrationService.class).registerPatient(form("demo@example.test"));
-			firstId = patient.getId();
-			firstHash = first.getBean(UserRepository.class).findById(firstId).orElseThrow().getPasswordHash();
-			assertThat(first.getBean(MedicalRecordRepository.class).countByOwnerId(firstId)).isEqualTo(3);
+			assertThat(first.getBeanProvider(DemoRecordSeeder.class).getIfAvailable())
+				.as("no seeder with the persistent profile, even with 'demo'").isNull();
+			assertThat(first.getBeanProvider(DemoProfileIgnoredWarning.class).getIfAvailable())
+				.as("'demo' is reported as ignored").isNotNull();
+			User patient = first.getBean(RegistrationService.class).registerPatient(form("asha@example.test"));
+			patientId = patient.getId();
+			MedicalRecordRepository records = first.getBean(MedicalRecordRepository.class);
+			assertThat(records.countByOwnerId(patientId)).as("a new account starts empty").isZero();
+			records.save(new MedicalRecord(patient, "Fictional vitamin D test", RecordType.LAB_REPORT,
+					LocalDate.now().minusDays(3), null, null));
 		}
-		try (ConfigurableApplicationContext second = start(root, "local-file,demo")) {
+		try (ConfigurableApplicationContext second = start(root, "local-file")) {
 			MedicalRecordRepository records = second.getBean(MedicalRecordRepository.class);
-			assertThat(records.countByOwnerId(firstId)).isEqualTo(3);
-			assertThat(second.getBean(DemoRecordSeeder.class).seedFor(firstId)).isZero();
-			User unchanged = second.getBean(UserRepository.class).findById(firstId).orElseThrow();
-			assertThat(unchanged.getPasswordHash()).isEqualTo(firstHash);
-			assertThat(unchanged.getRole()).isEqualTo(Role.PATIENT);
-			assertThat(records.count()).isEqualTo(3);
-		}
-		try (ConfigurableApplicationContext plain = start(root, "local-file")) {
-			assertThat(plain.getBeanProvider(DemoRecordSeeder.class).getIfAvailable()).as("no demo without 'demo'")
-				.isNull();
-			User later = plain.getBean(RegistrationService.class).registerPatient(form("later@example.test"));
-			assertThat(plain.getBean(MedicalRecordRepository.class).countByOwnerId(later.getId())).isZero();
+			assertThat(records.findAllByOwnerIdOrderByRecordDateDescIdDesc(patientId)).as("kept across the restart")
+				.extracting(MedicalRecord::getTitle)
+				.containsExactly("Fictional vitamin D test");
+			User later = second.getBean(RegistrationService.class).registerPatient(form("later@example.test"));
+			assertThat(records.countByOwnerId(later.getId())).isZero();
+			assertThat(records.count()).as("only the record the patient added").isEqualTo(1);
 		}
 	}
 

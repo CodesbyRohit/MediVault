@@ -15,14 +15,14 @@
     </div>
 
     <div class="card-grid">
-        <section class="card" aria-labelledby="count-title">
+        <section class="card card-stat" aria-labelledby="count-title">
             <h2 id="count-title">Your records</h2>
             <p class="stat" th:text="${recordCount}">0</p>
             <p class="muted" th:text="${recordCount == 1} ? 'medical record stored' : 'medical records stored'">
                 medical records stored</p>
         </section>
 
-        <section class="card" aria-labelledby="documents-title">
+        <section class="card card-stat" aria-labelledby="documents-title">
             <h2 id="documents-title">Documents</h2>
             <p class="stat" th:text="${storage.documentCount}">0</p>
             <p class="muted">
@@ -32,7 +32,7 @@
         </section>
 
         <section class="card" aria-labelledby="recent-title">
-            <h2 id="recent-title">Recent records</h2>
+            <h2 id="recent-title">Recently added</h2>
             <ul class="record-list" th:if="${!recentRecords.isEmpty()}">
                 <li th:each="record : ${recentRecords}">
                     <a th:href="@{/records/{id}(id=${record.id})}" th:text="${record.title}">Record title</a>
@@ -43,7 +43,10 @@
                     </span>
                 </li>
             </ul>
-            <p th:if="${recentRecords.isEmpty()}">You don't have any medical records yet.</p>
+            <div class="empty-state" th:if="${recentRecords.isEmpty()}">
+                <p>You don't have any medical records yet.</p>
+                <p><a class="button" th:href="@{/records/new}">Add your first record</a></p>
+            </div>
             <p th:if="${recordCount > 0}"><a th:href="@{/records}">View all your records</a></p>
         </section>
     </div>

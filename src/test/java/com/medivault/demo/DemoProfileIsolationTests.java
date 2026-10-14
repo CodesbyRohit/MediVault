@@ -11,9 +11,10 @@ import com.medivault.record.MedicalRecordRepository;
 import com.medivault.user.UserRepository;
 
 /**
- * Demo seeding must exist only for "demo" + "local-h2" or "demo" + "local-file" (both pinned to
- * H2 by DatabaseSafetyGuard), so fictional records can never be written to MySQL. Uses a
- * lightweight context per profile combination.
+ * Demo seeding must exist only for "demo" + the disposable in-memory "local-h2", so fictional
+ * records can never be written to the persistent "local-file" database or to MySQL. Every other
+ * combination that asks for "demo" logs a warning instead. Uses a lightweight context per profile
+ * combination.
  */
 class DemoProfileIsolationTests {
 
@@ -32,11 +33,11 @@ class DemoProfileIsolationTests {
 			"demo,local-h2   | true  | false",
 			"local-h2,demo   | true  | false",
 			"local-file      | false | false",
-			"demo,local-file | true  | false",
-			"local-file,demo | true  | false",
+			"demo,local-file | false | true",
+			"local-file,demo | false | true",
 			"mysql           | false | false",
 			"mysql,demo      | false | true" })
-	void seederExistsOnlyWithDemoAndALocalH2Profile(String profiles, boolean seederExpected, boolean warningExpected) {
+	void seederExistsOnlyWithDemoAndTheInMemoryLocalH2Profile(String profiles, boolean seederExpected, boolean warningExpected) {
 		runner.withPropertyValues("spring.profiles.active=" + profiles).run(context -> {
 			assertThat(context.getBeanNamesForType(DemoRecordSeeder.class)).hasSize(seederExpected ? 1 : 0);
 			assertThat(context.getBeanNamesForType(DemoProfileIgnoredWarning.class)).hasSize(warningExpected ? 1 : 0);

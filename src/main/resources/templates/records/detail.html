@@ -70,7 +70,7 @@
         </ul>
         <p class="muted" th:if="${documents.isEmpty()}">No documents are attached to this record yet.</p>
 
-        <form class="form" th:action="@{/records/{id}/documents(id=${record.id})}" method="post"
+        <form class="form upload-form" th:action="@{/records/{id}/documents(id=${record.id})}" method="post"
               enctype="multipart/form-data">
             <div class="field">
                 <label for="file">Attach a PDF</label>

@@ -30,6 +30,10 @@
   --color-focus: #0b1f33;          /* 16.7:1 on white, 15.6:1 on the page background */
   --color-focus-on-dark: #5eead4;
   --color-banner: #fff6d6;
+  --color-data-1: #0b5f7a;         /* chart marks: 7.2:1 on white */
+  --color-data-2: #0e7c86;         /* 4.9:1 on white */
+  --color-data-3: #2a9d8f;         /* 3.3:1 on white, 3.0:1 on --color-data-track (marks need 3:1) */
+  --color-data-track: #eef5f8;     /* decorative track behind chart marks */
   --radius: 10px;                  /* controls */
   --radius-surface: 14px;          /* cards and panels */
   --shadow: 0 1px 2px rgba(11, 31, 51, 0.06), 0 4px 12px rgba(11, 31, 51, 0.06);
@@ -718,7 +722,8 @@ a:hover {
 
 /* Teal bars on a pale track instead of the browser's default green. The bars are decorative
    (aria-hidden); the count is always shown as text next to them. */
-.type-counts meter {
+.type-counts meter,
+.storage-meter {
   width: 100%;
   height: 0.6rem;
   -webkit-appearance: none;
@@ -729,7 +734,8 @@ a:hover {
   border-radius: 999px;
 }
 
-.type-counts meter::-webkit-meter-bar {
+.type-counts meter::-webkit-meter-bar,
+.storage-meter::-webkit-meter-bar {
   height: 0.6rem;
   background: var(--color-primary-soft);
   border: 0;
@@ -738,12 +744,16 @@ a:hover {
 
 .type-counts meter::-webkit-meter-optimum-value,
 .type-counts meter::-webkit-meter-suboptimum-value,
-.type-counts meter::-webkit-meter-even-less-good-value {
+.type-counts meter::-webkit-meter-even-less-good-value,
+.storage-meter::-webkit-meter-optimum-value,
+.storage-meter::-webkit-meter-suboptimum-value,
+.storage-meter::-webkit-meter-even-less-good-value {
   background: var(--color-primary);
   border-radius: 999px;
 }
 
-.type-counts meter::-moz-meter-bar {
+.type-counts meter::-moz-meter-bar,
+.storage-meter::-moz-meter-bar {
   background: var(--color-primary);
   border-radius: 999px;
 }
@@ -810,6 +820,341 @@ a:hover {
 }
 
 /* Stack table rows as cards on narrow screens */
+/* ---------- Dashboard ---------- */
+
+.dashboard {
+  max-width: 76rem;
+}
+
+.page-lead {
+  margin: 0;
+}
+
+/* A long unbroken name in the greeting wraps instead of widening the page. */
+.dashboard .page-header-actions > div {
+  min-width: 0;
+}
+
+.dashboard h1 {
+  overflow-wrap: anywhere;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* Long unbroken names and titles wrap inside their card instead of widening the page. */
+.dash-grid > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dash-grid .card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-grid .card-stat {
+  align-self: stretch;
+}
+
+.card-label {
+  margin: 0 0 var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.stat,
+.legend-value,
+.type-figure,
+.summary-facts dd,
+.histogram text,
+.ring-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The space before the unit is a real text space, so screen readers say "2 records", not "2records". */
+.stat-unit {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--color-muted);
+}
+
+.stat-date {
+  font-size: 1.75rem;
+}
+
+.stat-line {
+  margin: var(--space-sm) 0 0;
+  font-size: 0.9rem;
+}
+
+/* Size and colours come from the shared meter rules above. */
+.storage-meter {
+  margin-top: var(--space-sm);
+}
+
+.stat-source {
+  margin-top: auto;
+  padding-top: var(--space-md);
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* Patient summary: the one navy surface on the page. Text colours are documented on their tokens. */
+.summary-card {
+  color: #ffffff;
+  background: var(--color-navy-soft);
+  border-color: var(--color-navy);
+}
+
+.summary-card .card-label,
+.summary-role,
+.summary-facts dt,
+.summary-privacy {
+  color: var(--color-on-dark-muted);
+}
+
+.summary-identity {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.initials {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-accent);
+  background: rgba(94, 234, 212, 0.12);
+  border: 1px solid rgba(94, 234, 212, 0.45);
+  border-radius: 50%;
+}
+
+.summary-name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.summary-role {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.summary-facts {
+  margin: 0 0 var(--space-lg);
+}
+
+.summary-facts div {
+  padding-block: var(--space-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.summary-facts dt {
+  font-size: 0.8125rem;
+}
+
+.summary-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.summary-privacy {
+  margin-top: auto;
+  font-size: 0.8125rem;
+}
+
+/* Completeness ring: three arcs on one circle (pathLength 300), positioned by dash offsets. */
+.ring-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  align-items: center;
+}
+
+.ring {
+  flex: none;
+  width: 8.5rem;
+  height: 8.5rem;
+}
+
+.ring-track,
+.ring-fill {
+  fill: none;
+  stroke-width: 12;
+}
+
+.ring-track { stroke: var(--color-data-track); }
+.ring-fill-1 { stroke: var(--color-data-1); }
+.ring-fill-2 { stroke: var(--color-data-2); }
+.ring-fill-3 { stroke: var(--color-data-3); }
+
+.ring-value {
+  font-size: 24px;
+  font-weight: 700;
+  fill: var(--color-navy);
+}
+
+.ring-legend {
+  flex: 1 1 10rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ring-legend li {
+  display: grid;
+  grid-template-columns: 0.75rem minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+  padding-block: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+}
+
+.legend-swatch-1 { background: var(--color-data-1); }
+.legend-swatch-2 { background: var(--color-data-2); }
+.legend-swatch-3 { background: var(--color-data-3); }
+
+.legend-value {
+  font-weight: 600;
+}
+
+.chart-caption {
+  margin: var(--space-md) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* Weekly histogram: bars and labels are drawn in a 320 x 150 viewBox that scales with the card. */
+.histogram {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.histogram-axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.histogram-bar {
+  fill: var(--color-data-1);
+}
+
+.histogram-count {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--color-text);
+}
+
+.histogram-label {
+  font-size: 11px;
+  fill: var(--color-muted);
+}
+
+.dash-grid .type-counts li {
+  grid-template-columns: minmax(0, 1fr) 5rem 4.5rem;
+}
+
+.type-figure {
+  text-align: right;
+}
+
+.type-empty a {
+  color: var(--color-muted);
+}
+
+@media (min-width: 40rem) {
+  .dash-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .dash-grid > * {
+    grid-column: span 3;
+  }
+
+  .dash-grid > .stat-card {
+    grid-column: span 2;
+  }
+
+  /* Charts get the full width on tablets so the histogram labels stay legible. */
+  .dash-grid > .summary-card,
+  .dash-grid > .completeness-card,
+  .dash-grid > .weekly-card,
+  .dash-grid > .types-card,
+  .dash-grid > .dash-welcome {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The summary is placed explicitly (columns 1-3, rows 1-2); everything else flows around it in
+   source order. It holds no links, so this does not change the keyboard focus order. */
+@media (min-width: 66rem) {
+  .dash-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .dash-grid > * {
+    grid-column: span 4;
+  }
+
+  .dash-grid > .stat-card {
+    grid-column: span 3;
+  }
+
+  .dash-grid > .summary-card {
+    grid-column: 1 / span 3;
+    grid-row: 1 / span 2;
+  }
+
+  .dash-grid > .completeness-card {
+    grid-column: span 4;
+  }
+
+  .dash-grid > .weekly-card {
+    grid-column: span 5;
+  }
+
+  .dash-grid > .types-card {
+    grid-column: span 4;
+  }
+
+  .dash-grid > .dash-welcome {
+    grid-column: 4 / -1;
+  }
+}
+
 @media (max-width: 40rem) {
   .table thead {
     position: absolute;
@@ -1104,6 +1449,10 @@ a:hover {
   .documents {
     border-color: var(--color-control-border);
   }
+
+  .histogram-axis {
+    stroke: var(--color-control-border);
+  }
 }
 
 @media (forced-colors: active) {
@@ -1126,6 +1475,32 @@ a:hover {
 
   .button {
     border: 2px solid ButtonText;
+  }
+
+  .summary-card {
+    color: CanvasText;
+    background: Canvas;
+  }
+
+  .ring-track {
+    stroke: GrayText;
+  }
+
+  .ring-fill {
+    stroke: Highlight;
+  }
+
+  .histogram-bar {
+    fill: Highlight;
+  }
+
+  .ring-value,
+  .histogram text {
+    fill: CanvasText;
+  }
+
+  .legend-swatch {
+    border: 1px solid CanvasText;
   }
 }
 

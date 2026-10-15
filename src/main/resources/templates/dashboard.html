@@ -5,35 +5,185 @@
     <title>Dashboard &middot; MediVault</title>
 </head>
 <body>
-<main id="main-content" tabindex="-1" class="container">
+<main id="main-content" tabindex="-1" class="container dashboard"
+      th:with="completeness=${insights.completeness}, hasRecords=${insights.completeness.total > 0}">
     <div class="page-header page-header-actions">
         <div>
             <p class="eyebrow">Dashboard</p>
             <h1 th:text="|Welcome, ${fullName}|">Welcome, Patient</h1>
+            <p class="muted page-lead">Every figure below is counted from records you saved.</p>
         </div>
         <a class="button" th:href="@{/records/new}">Add a record</a>
     </div>
 
-    <div class="card-grid">
-        <section class="card card-stat" aria-labelledby="count-title">
-            <h2 id="count-title">Your records</h2>
-            <p class="stat" th:text="${recordCount}">0</p>
-            <p class="muted" th:text="${recordCount == 1} ? 'medical record stored' : 'medical records stored'">
-                medical records stored</p>
+    <div class="dash-grid">
+        <section class="card card-stat stat-card" aria-labelledby="count-title">
+            <h2 id="count-title" class="card-label">Records stored</h2>
+            <p class="stat"><span th:text="${recordCount}">0</span> <span class="stat-unit"
+                    th:text="${recordCount == 1} ? 'record' : 'records'">records</span></p>
+            <p class="stat-line" th:if="${insights.lastAddedAt != null}">Last added
+                <time th:datetime="|${#temporals.format(insights.lastAddedAt, 'yyyy-MM-dd')}T${#temporals.format(insights.lastAddedAt, 'HH:mm')}|"
+                      th:text="${#temporals.format(insights.lastAddedAt, 'd MMM yyyy, HH:mm')}">14 Oct 2026, 09:30</time></p>
+            <p class="stat-line" th:if="${insights.lastAddedAt == null}">No records yet</p>
+            <p class="stat-source">Source: your saved records</p>
         </section>
 
-        <section class="card card-stat" aria-labelledby="documents-title">
-            <h2 id="documents-title">Documents</h2>
-            <p class="stat" th:text="${storage.documentCount}">0</p>
-            <p class="muted">
-                <span th:text="${storage.documentCount == 1} ? 'PDF attached' : 'PDFs attached'">PDFs attached</span>
-                &middot; <span th:text="|${storage.usedLabel()} of ${storage.quotaLabel()} used|">0 bytes of 100 MB used</span>
-            </p>
+        <section class="card card-stat stat-card" aria-labelledby="documents-title">
+            <h2 id="documents-title" class="card-label">Documents</h2>
+            <p class="stat"><span th:text="${storage.documentCount}">0</span> <span class="stat-unit"
+                    th:text="${storage.documentCount == 1} ? 'PDF' : 'PDFs'">PDFs</span></p>
+            <meter class="storage-meter" min="0" th:max="${storage.quotaBytes}" th:value="${storage.usedBytes}"
+                   aria-hidden="true"></meter>
+            <p class="stat-line" th:text="|${storage.usedLabel()} of ${storage.quotaLabel()} upload limit used|">
+                0 bytes of 100 MB upload limit used</p>
+            <p class="stat-line" th:if="${insights.lastUploadAt != null}">Last upload
+                <time th:datetime="|${#temporals.format(insights.lastUploadAt, 'yyyy-MM-dd')}T${#temporals.format(insights.lastUploadAt, 'HH:mm')}|"
+                      th:text="${#temporals.format(insights.lastUploadAt, 'd MMM yyyy, HH:mm')}">12 Oct 2026, 18:05</time></p>
+            <p class="stat-line" th:if="${insights.lastUploadAt == null}">No PDFs yet</p>
+            <p class="stat-source">Source: your attached PDFs (original file sizes)</p>
         </section>
 
-        <section class="card" aria-labelledby="recent-title">
-            <h2 id="recent-title">Recently added</h2>
-            <ul class="record-list" th:if="${!recentRecords.isEmpty()}">
+        <section class="card card-stat stat-card" aria-labelledby="latest-title">
+            <h2 id="latest-title" class="card-label">Latest record</h2>
+            <th:block th:if="${insights.latestRecord != null}">
+                <p class="stat stat-date"><time th:datetime="${insights.latestRecord.recordDate}"
+                        th:text="${#temporals.format(insights.latestRecord.recordDate, 'd MMM yyyy')}">3 Oct 2026</time></p>
+                <p class="stat-line"><span th:text="${insights.latestRecord.recordType.displayName}">Lab report</span>
+                    &middot; <a th:href="@{/records/{id}(id=${insights.latestRecord.id})}"
+                                th:text="${insights.latestRecord.title}">Lipid profile</a></p>
+            </th:block>
+            <th:block th:if="${insights.latestRecord == null}">
+                <p class="stat">&mdash;</p>
+                <p class="stat-line">No records yet</p>
+            </th:block>
+            <p class="stat-source">Source: record date as you entered it</p>
+        </section>
+
+        <section class="card summary-card" aria-labelledby="summary-title">
+            <h2 id="summary-title" class="card-label">Patient summary</h2>
+            <div class="summary-identity">
+                <span class="initials" aria-hidden="true" th:text="${insights.initials}">AF</span>
+                <div>
+                    <p class="summary-name" th:text="${fullName}">Asha Fictional</p>
+                    <p class="summary-role">Patient account</p>
+                </div>
+            </div>
+            <dl class="summary-facts">
+                <div>
+                    <dt>Member since</dt>
+                    <dd><time th:datetime="${insights.memberSince}"
+                              th:text="${#temporals.format(insights.memberSince, 'd MMM yyyy')}">1 Oct 2026</time></dd>
+                </div>
+                <div th:if="${insights.latestRecord != null and insights.earliestRecordDate != null}">
+                    <dt>Records span</dt>
+                    <dd><time th:datetime="${insights.earliestRecordDate}"
+                              th:text="${#temporals.format(insights.earliestRecordDate, 'd MMM yyyy')}">1 Jan 2024</time>
+                        &ndash;
+                        <time th:datetime="${insights.latestRecord.recordDate}"
+                              th:text="${#temporals.format(insights.latestRecord.recordDate, 'd MMM yyyy')}">3 Oct 2026</time></dd>
+                </div>
+                <div th:if="${hasRecords}">
+                    <dt>Providers named</dt>
+                    <dd th:text="${insights.providerCount}">3</dd>
+                </div>
+                <div th:if="${hasRecords}">
+                    <dt>Record types on file</dt>
+                    <dd th:text="|${insights.typesOnFile()} of ${insights.types.size()}|">4 of 6</dd>
+                </div>
+            </dl>
+            <p class="summary-privacy">Only your account can open these records. New PDF uploads are stored
+                encrypted.</p>
+        </section>
+
+        <section class="card dash-welcome" th:if="${!hasRecords}" aria-labelledby="welcome-title">
+            <h2 id="welcome-title" class="card-label">Start your vault</h2>
+            <div class="empty-state">
+                <p>You don't have any medical records yet.</p>
+                <p><a class="button" th:href="@{/records/new}">Add your first record</a></p>
+            </div>
+        </section>
+
+        <section class="card completeness-card" th:if="${hasRecords}" aria-labelledby="completeness-title">
+            <h2 id="completeness-title" class="card-label">Record completeness</h2>
+            <div class="ring-layout">
+                <svg class="ring" viewBox="0 0 120 120" role="img"
+                     th:aria-label="|Overall record completeness ${completeness.percent()} percent|">
+                    <g transform="rotate(-90 60 60)">
+                        <th:block th:each="segment, segmentStat : ${completeness.segments()}">
+                            <circle class="ring-track" cx="60" cy="60" r="48" pathLength="300"
+                                    th:stroke-dasharray="${segment.trackDash()}"
+                                    th:stroke-dashoffset="${segment.offset()}"></circle>
+                            <circle th:class="|ring-fill ring-fill-${segmentStat.count}|" cx="60" cy="60" r="48"
+                                    pathLength="300" th:stroke-dasharray="${segment.fillDash()}"
+                                    th:stroke-dashoffset="${segment.offset()}"></circle>
+                        </th:block>
+                    </g>
+                    <text class="ring-value" x="60" y="60" text-anchor="middle" dominant-baseline="central"
+                          th:text="|${completeness.percent()}%|">67%</text>
+                </svg>
+                <ul class="ring-legend">
+                    <li th:each="segment, segmentStat : ${completeness.segments()}">
+                        <span th:class="|legend-swatch legend-swatch-${segmentStat.count}|" aria-hidden="true"></span>
+                        <span th:text="${segment.label}">Provider named</span>
+                        <span class="legend-value" th:text="|${segment.count} of ${segment.total}|">8 of 12</span>
+                    </li>
+                </ul>
+            </div>
+            <p class="chart-caption">Paperwork completeness &mdash; not a health score.</p>
+        </section>
+
+        <section class="card weekly-card" th:if="${hasRecords}" aria-labelledby="weekly-title">
+            <h2 id="weekly-title" class="card-label">Records added per week</h2>
+            <svg class="histogram" viewBox="0 0 320 150" aria-hidden="true" focusable="false">
+                <line class="histogram-axis" x1="0" y1="120.5" x2="320" y2="120.5"></line>
+                <g th:each="week, weekStat : ${insights.weeks}">
+                    <rect class="histogram-bar" width="24" rx="3"
+                          th:x="${weekStat.index * 40 + 8}" th:y="${120 - week.height}"
+                          th:height="${week.height}"></rect>
+                    <text class="histogram-count" text-anchor="middle"
+                          th:x="${weekStat.index * 40 + 20}" th:y="${114 - week.height}"
+                          th:text="${week.count}">0</text>
+                    <text class="histogram-label" text-anchor="middle" y="140"
+                          th:x="${weekStat.index * 40 + 20}"
+                          th:text="${#temporals.format(week.weekStart, 'd MMM')}">6 Oct</text>
+                </g>
+            </svg>
+            <table class="visually-hidden">
+                <caption>Records added per week, last 8 weeks, oldest first</caption>
+                <thead>
+                <tr>
+                    <th scope="col">Week starting</th>
+                    <th scope="col">Records added</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="week : ${insights.weeks}">
+                    <th scope="row"><span th:text="${#temporals.format(week.weekStart, 'd MMM yyyy')}">6 Oct 2026</span><span
+                            th:if="${week.current}"> (this week, so far)</span></th>
+                    <td th:text="${week.count}">0</td>
+                </tr>
+                </tbody>
+            </table>
+            <p class="chart-caption"
+               th:text="|By date added to MediVault, not the record date. Weeks start Monday (server time zone ${insights.zone.id}).|">
+                By date added to MediVault, not the record date. Weeks start Monday (server time zone UTC).</p>
+        </section>
+
+        <section class="card types-card" th:if="${hasRecords}" aria-labelledby="types-title">
+            <h2 id="types-title" class="card-label">Records by type</h2>
+            <ul class="type-counts">
+                <li th:each="share : ${insights.types}" th:classappend="${share.count == 0} ? 'type-empty'">
+                    <a th:href="@{/records(type=${share.type})}" th:text="${share.type.displayName}">Lab report</a>
+                    <meter min="0" th:max="${recordCount}" th:value="${share.count}" aria-hidden="true"></meter>
+                    <span class="type-figure"><span th:text="${share.count}">2</span>
+                        <span class="muted" th:text="|${share.percent}%|">17%</span></span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="card recent-card" th:if="${hasRecords}" aria-labelledby="recent-title">
+            <h2 id="recent-title" class="card-label">Recently added</h2>
+            <ul class="record-list">
                 <li th:each="record : ${recentRecords}">
                     <a th:href="@{/records/{id}(id=${record.id})}" th:text="${record.title}">Record title</a>
                     <span class="record-meta">
@@ -43,28 +193,11 @@
                     </span>
                 </li>
             </ul>
-            <div class="empty-state" th:if="${recentRecords.isEmpty()}">
-                <p>You don't have any medical records yet.</p>
-                <p><a class="button" th:href="@{/records/new}">Add your first record</a></p>
-            </div>
-            <p th:if="${recordCount > 0}"><a th:href="@{/records}">View all your records</a></p>
-        </section>
-    </div>
-
-    <div class="card-grid" th:if="${recordCount > 0}">
-        <section class="card" aria-labelledby="types-title">
-            <h2 id="types-title">Records by type</h2>
-            <ul class="type-counts">
-                <li th:each="entry : ${typeCounts}">
-                    <a th:href="@{/records(type=${entry.key})}" th:text="${entry.key.displayName}">Lab report</a>
-                    <meter min="0" th:max="${recordCount}" th:value="${entry.value}" aria-hidden="true"></meter>
-                    <span th:text="${entry.value}">2</span>
-                </li>
-            </ul>
+            <p><a th:href="@{/records}">View all your records</a></p>
         </section>
 
-        <section class="card" aria-labelledby="uploads-title">
-            <h2 id="uploads-title">Recently uploaded</h2>
+        <section class="card recent-card" th:if="${hasRecords}" aria-labelledby="uploads-title">
+            <h2 id="uploads-title" class="card-label">Recently uploaded</h2>
             <ul class="record-list" th:if="${!recentDocuments.isEmpty()}">
                 <li th:each="document : ${recentDocuments}">
                     <a th:href="@{/records/{id}(id=${document.recordId})}" th:text="${document.filename}">report.pdf</a>
@@ -76,8 +209,7 @@
                     </span>
                 </li>
             </ul>
-            <p class="muted" th:if="${recentDocuments.isEmpty()}">
-                No PDFs yet. Open a record to attach one.</p>
+            <p class="muted" th:if="${recentDocuments.isEmpty()}">No PDFs yet. Open a record to attach one.</p>
         </section>
     </div>
 </main>

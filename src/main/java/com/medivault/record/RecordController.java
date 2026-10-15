@@ -43,9 +43,13 @@ public class RecordController {
 
 	private final RecordDocumentService documentService;
 
-	public RecordController(MedicalRecordService recordService, RecordDocumentService documentService) {
+	private final DashboardService dashboardService;
+
+	public RecordController(MedicalRecordService recordService, RecordDocumentService documentService,
+			DashboardService dashboardService) {
 		this.recordService = recordService;
 		this.documentService = documentService;
+		this.dashboardService = dashboardService;
 	}
 
 	/** Only these fields can ever be bound from a record form: never an id, owner or timestamp. */
@@ -73,6 +77,7 @@ public class RecordController {
 		model.addAttribute("typeCounts", recordService.typeCountsForOwner(ownerId));
 		model.addAttribute("storage", documentService.usageForOwner(ownerId));
 		model.addAttribute("recentDocuments", documentService.recentForOwner(ownerId));
+		model.addAttribute("insights", dashboardService.insightsFor(ownerId));
 		return "dashboard";
 	}
 

@@ -16,8 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +39,9 @@ import com.medivault.demo.DemoRecordSeeder;
 import com.medivault.document.FictionalPdf;
 import com.medivault.document.RecordDocumentService.RecentDocument;
 import com.medivault.document.RecordDocumentService.StorageUsage;
+import com.medivault.record.DashboardInsights.Completeness;
+import com.medivault.record.DashboardInsights.TypeShare;
+import com.medivault.record.DashboardInsights.WeekBar;
 import com.medivault.user.User;
 
 /**
@@ -48,6 +57,13 @@ class DashboardTests extends IntegrationTestSupport {
 
 	@Autowired
 	private JdbcTemplate jdbc;
+
+	private static final ZoneId KOLKATA = ZoneId.of("Asia/Kolkata");
+
+	private static final LocalDate WEDNESDAY = LocalDate.of(2026, 10, 14);
+
+	@Autowired
+	private DashboardService dashboardService;
 
 	private Map<String, Object> dashboardModel(User patient) throws Exception {
 		ModelAndView view = mockMvc.perform(get("/dashboard").with(user(principal(patient))))
@@ -79,6 +95,12 @@ class DashboardTests extends IntegrationTestSupport {
 			.file(new MockMultipartFile("file", name, "application/pdf", pdf))
 			.with(csrf())
 			.with(user(principal(patient)))).andExpect(flash().attribute("uploadSuccess", true));
+	}
+
+	/** Sets when a record was "added", as an exact instant; whole seconds only, to suit TIMESTAMP(6). */
+	private void setCreatedAt(MedicalRecord record, Instant createdAt) {
+		jdbc.update("update medical_records set created_at = ? where id = ?",
+				OffsetDateTime.ofInstant(createdAt, ZoneOffset.UTC), record.getId());
 	}
 
 	@Test
@@ -187,6 +209,164 @@ class DashboardTests extends IntegrationTestSupport {
 		assertThat(raviModel.get("recordCount")).isEqualTo(1L);
 		assertThat(recentTitles(raviModel)).containsExactly("Ravi private report");
 		assertThat(((StorageUsage) raviModel.get("storage")).documentCount()).isEqualTo(1);
+	}
+
+	@Test
+	void completenessCountsEachFieldOncePerRecord() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		MedicalRecord complete = createRecord(asha, "Asha complete record"); // provider and notes
+		createRecord(asha, "Asha bare record", LocalDate.now().minusDays(3)); // neither
+		// Written outside the form, which would have stored these blanks as null.
+		recordRepository.save(new MedicalRecord(asha, "Asha spaces only", RecordType.OTHER,
+				LocalDate.now().minusDays(4), "   ", "   "));
+		upload(asha, complete, "fictional-one.pdf", FictionalPdf.bytes("Asha first scan"));
+		upload(asha, complete, "fictional-two.pdf", FictionalPdf.bytes("Asha second scan"));
+
+		Completeness completeness = dashboardService.insightsFor(asha.getId(), WEDNESDAY, KOLKATA).completeness();
+
+		assertThat(completeness).isEqualTo(new Completeness(3, 1, 1, 1));
+		assertThat(completeness.percent()).isEqualTo(33); // (1 + 1 + 1) × 100 ÷ 9 = 33.3, rounded down
+	}
+
+	@Test
+	void weeklyActivityUsesTheEightWeekWindowInTheGivenZone() {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		User ravi = createPatient("Ravi Fictional", "ravi@example.test");
+		Map<String, Instant> added = new LinkedHashMap<>();
+		added.put("just before the window", Instant.parse("2026-08-23T18:29:59Z")); // Sun 23 Aug 23:59:59 IST
+		added.put("first second of the window", Instant.parse("2026-08-23T18:30:00Z")); // Mon 24 Aug 00:00 IST
+		added.put("Sunday night", Instant.parse("2026-10-11T18:29:59Z")); // Sun 11 Oct 23:59:59 IST
+		added.put("Monday midnight", Instant.parse("2026-10-11T18:30:00Z")); // Mon 12 Oct 00:00 IST
+		added.put("end of the window", Instant.parse("2026-10-18T18:30:00Z")); // Mon 19 Oct 00:00 IST
+		added.forEach((label, instant) -> setCreatedAt(createRecord(asha, "Asha " + label), instant));
+		setCreatedAt(createRecord(ravi, "Ravi this week"), Instant.parse("2026-10-13T06:00:00Z"));
+
+		List<WeekBar> weeks = dashboardService.insightsFor(asha.getId(), WEDNESDAY, KOLKATA).weeks();
+
+		assertThat(weeks).extracting(WeekBar::weekStart)
+			.containsExactly(LocalDate.of(2026, 8, 24), LocalDate.of(2026, 8, 31), LocalDate.of(2026, 9, 7),
+					LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 28),
+					LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 12));
+		assertThat(weeks).extracting(WeekBar::count).containsExactly(1L, 0L, 0L, 0L, 0L, 0L, 1L, 1L);
+	}
+
+	@Test
+	void anotherPatientsDataNeverCountsInTheInsights() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		User ravi = createPatient("Ravi Fictional", "ravi@example.test");
+		MedicalRecord ashaRecord = createRecord(asha, "Asha older report", LocalDate.of(2026, 9, 1));
+		MedicalRecord raviRecord = recordRepository.save(new MedicalRecord(ravi, "Ravi private report",
+				RecordType.IMAGING, LocalDate.of(2026, 10, 10), "Ravi Fictional Clinic", "Ravi fictional notes"));
+		upload(ravi, raviRecord, "ravi-private.pdf", FictionalPdf.bytes("Ravi private scan"));
+		// Older than anything of Asha's, so a leak into the earliest record date would show.
+		createRecord(ravi, "Ravi oldest report", LocalDate.of(2020, 1, 1));
+		setCreatedAt(ashaRecord, Instant.parse("2026-10-13T06:00:00Z"));
+		setCreatedAt(raviRecord, Instant.parse("2026-10-13T07:00:00Z"));
+
+		DashboardInsights insights = dashboardService.insightsFor(asha.getId(), WEDNESDAY, KOLKATA);
+
+		assertThat(insights.completeness()).isEqualTo(new Completeness(1, 0, 0, 0));
+		assertThat(insights.weeks()).extracting(WeekBar::count).containsExactly(0L, 0L, 0L, 0L, 0L, 0L, 0L, 1L);
+		assertThat(insights.latestRecord().getTitle()).isEqualTo("Asha older report");
+		assertThat(insights.earliestRecordDate()).isEqualTo(LocalDate.of(2026, 9, 1));
+		assertThat(insights.lastAddedAt()).isEqualTo(LocalDateTime.of(2026, 10, 13, 11, 30));
+		assertThat(insights.lastUploadAt()).isNull();
+		assertThat(insights.providerCount()).isZero();
+		assertThat(insights.types()).filteredOn(share -> share.count() > 0)
+			.extracting(TypeShare::type)
+			.containsExactly(RecordType.PRESCRIPTION);
+	}
+
+	@Test
+	void latestRecordFollowsRecordDateThenAddedTimeThenId() {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		LocalDate sameDay = LocalDate.of(2026, 10, 1);
+		// Ids rise a < b < c < older, but the added times do not follow the ids, so an order that
+		// skipped createdAt (or used only the id) would pick a different record.
+		MedicalRecord a = createRecord(asha, "Same day, added latest, lowest id", sameDay);
+		MedicalRecord b = createRecord(asha, "Same day, added latest, higher id", sameDay);
+		MedicalRecord c = createRecord(asha, "Same day, added earlier, highest id", sameDay);
+		MedicalRecord older = createRecord(asha, "Older date, highest id overall", LocalDate.of(2025, 5, 1));
+		setCreatedAt(a, Instant.parse("2026-10-03T08:00:00Z"));
+		setCreatedAt(b, Instant.parse("2026-10-03T08:00:00Z"));
+		setCreatedAt(c, Instant.parse("2026-10-02T08:00:00Z"));
+		setCreatedAt(older, Instant.parse("2026-10-01T08:00:00Z"));
+
+		DashboardInsights insights = dashboardService.insightsFor(asha.getId(), WEDNESDAY, KOLKATA);
+
+		assertThat(a.getId()).isLessThan(b.getId());
+		assertThat(b.getId()).isLessThan(c.getId());
+		assertThat(c.getId()).isLessThan(older.getId());
+		// Same record date: latest added wins (a and b), then the higher id (b), never c.
+		assertThat(insights.latestRecord().getTitle()).isEqualTo("Same day, added latest, higher id");
+		// Last added is by added time, not id: 3 Oct 08:00 UTC, not the highest id's 1 Oct.
+		assertThat(insights.lastAddedAt()).isEqualTo(LocalDateTime.of(2026, 10, 3, 13, 30));
+		assertThat(insights.earliestRecordDate()).isEqualTo(LocalDate.of(2025, 5, 1));
+	}
+
+	@Test
+	void aPatientWithoutRecordsGetsEmptyInsights() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+
+		DashboardInsights insights = dashboardService.insightsFor(asha.getId(), WEDNESDAY, KOLKATA);
+
+		assertThat(insights.completeness()).isEqualTo(new Completeness(0, 0, 0, 0));
+		assertThat(insights.completeness().percent()).isNull();
+		assertThat(insights.weeks()).hasSize(8).extracting(WeekBar::count).containsOnly(0L);
+		assertThat(insights.latestRecord()).isNull();
+		assertThat(insights.earliestRecordDate()).isNull();
+		assertThat(insights.lastAddedAt()).isNull();
+		assertThat(insights.lastUploadAt()).isNull();
+		assertThat(insights.providerCount()).isZero();
+		assertThat(insights.types()).extracting(TypeShare::type).containsExactly(RecordType.values());
+		assertThat(insights.types()).extracting(TypeShare::count).containsOnly(0L);
+		assertThat(insights.initials()).isEqualTo("AF");
+		assertThat(insights.memberSince()).isEqualTo(LocalDate
+			.ofInstant(userRepository.findById(asha.getId()).orElseThrow().getCreatedAt(), KOLKATA));
+		assertThat(dashboardModel(asha).get("insights")).isInstanceOf(DashboardInsights.class);
+	}
+
+	@Test
+	void thePageShowsTheChartsTheConfiguredLimitAndTheServerZone() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		createRecord(asha, "Asha lipid profile");
+		StorageUsage storage = (StorageUsage) dashboardModel(asha).get("storage");
+
+		mockMvc.perform(get("/dashboard").with(user(principal(asha))))
+			.andExpect(content().string(allOf(containsString("Welcome, Asha Fictional"),
+					containsString("Record completeness"), containsString("not a health score."),
+					containsString("Records added per week"), containsString("Records by type"),
+					containsString(storage.usedLabel() + " of " + storage.quotaLabel() + " upload limit used"),
+					containsString("Source: your attached PDFs (original file sizes)"),
+					containsString("server time zone " + ZoneId.systemDefault().getId()),
+					containsString("Only your account can open these records."),
+					not(containsString("You don't have any medical records yet.")))));
+	}
+
+	@Test
+	void theEmptyDashboardHasNoChartsOrInventedFigures() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+
+		mockMvc.perform(get("/dashboard").with(user(principal(asha))))
+			.andExpect(content().string(allOf(containsString("You don't have any medical records yet."),
+					containsString("href=\"/records/new\">Add your first record</a>"),
+					containsString("No records yet"), containsString("No PDFs yet"),
+					not(containsString("Record completeness")), not(containsString("Records added per week")),
+					not(containsString("Records span")), not(containsString("null")))));
+	}
+
+	@Test
+	void recordsOlderThanTheWindowLeaveEightEmptyWeeks() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		MedicalRecord old = createRecord(asha, "Asha old record");
+		setCreatedAt(old, Instant.now().minus(Duration.ofDays(70)));
+
+		Map<String, Object> model = dashboardModel(asha);
+
+		assertThat(((DashboardInsights) model.get("insights")).weeks()).extracting(WeekBar::count).containsOnly(0L);
+		mockMvc.perform(get("/dashboard").with(user(principal(asha))))
+			.andExpect(content().string(allOf(containsString("Record completeness"),
+					containsString("Records added per week"), containsString("this week, so far"))));
 	}
 
 }

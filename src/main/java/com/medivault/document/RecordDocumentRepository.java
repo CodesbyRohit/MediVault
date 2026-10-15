@@ -67,6 +67,10 @@ public interface RecordDocumentRepository extends JpaRepository<RecordDocument, 
 	@Query("select coalesce(sum(d.sizeBytes), 0) from RecordDocument d where d.record.owner.id = :ownerId")
 	long sumSizeBytesForOwner(@Param("ownerId") Long ownerId);
 
+	/** How many of the owner's records have at least one document (a record with several counts once). */
+	@Query("select count(distinct d.record.id) from RecordDocument d where d.record.owner.id = :ownerId")
+	long countRecordsWithDocumentsForOwner(@Param("ownerId") Long ownerId);
+
 	@Query("select d.id as documentId, d.originalFilename as filename, d.sizeBytes as sizeBytes, "
 			+ "d.uploadedAt as uploadedAt, r.id as recordId, r.title as recordTitle "
 			+ "from RecordDocument d join d.record r where r.owner.id = :ownerId order by d.uploadedAt desc, d.id desc")

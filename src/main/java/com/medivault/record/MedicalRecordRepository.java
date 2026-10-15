@@ -1,5 +1,6 @@
 package com.medivault.record;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,31 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
 	@Query("select r.recordType as type, count(r) as total from MedicalRecord r where r.owner.id = :ownerId "
 			+ "group by r.recordType")
 	List<TypeCount> countByTypeForOwner(@Param("ownerId") Long ownerId);
+
+	/** Records naming a provider; a name of spaces only does not count. */
+	@Query("select count(r) from MedicalRecord r where r.owner.id = :ownerId "
+			+ "and r.providerName is not null and trim(r.providerName) <> ''")
+	long countWithProviderForOwner(@Param("ownerId") Long ownerId);
+
+	/** Records with notes; notes of spaces only do not count. */
+	@Query("select count(r) from MedicalRecord r where r.owner.id = :ownerId "
+			+ "and r.notes is not null and trim(r.notes) <> ''")
+	long countWithNotesForOwner(@Param("ownerId") Long ownerId);
+
+	/** When each of the owner's records added in {@code [from, to)} was added. */
+	@Query("select r.createdAt from MedicalRecord r where r.owner.id = :ownerId "
+			+ "and r.createdAt >= :from and r.createdAt < :to")
+	List<Instant> findCreatedAtForOwnerBetween(@Param("ownerId") Long ownerId, @Param("from") Instant from,
+			@Param("to") Instant to);
+
+	/** The record with the earliest record date; the id breaks ties. */
+	Optional<MedicalRecord> findFirstByOwnerIdOrderByRecordDateAscIdAsc(Long ownerId);
+
+	/** The record with the latest record date; ties go to the most recently added, then the highest id. */
+	Optional<MedicalRecord> findFirstByOwnerIdOrderByRecordDateDescCreatedAtDescIdDesc(Long ownerId);
+
+	/** The most recently added record; the id breaks ties between identical timestamps. */
+	Optional<MedicalRecord> findFirstByOwnerIdOrderByCreatedAtDescIdDesc(Long ownerId);
 
 	@Query("select distinct r.providerName from MedicalRecord r where r.owner.id = :ownerId "
 			+ "and r.providerName is not null order by r.providerName")

@@ -1,10 +1,17 @@
 /* MediVault: shared stylesheet. Mobile-first, no external dependencies (CSP: style-src 'self').
  *
- * Visual system: navy and teal with restrained "glass" (translucent, blurred) surfaces. Glass is
- * used only for decorative frames: the header, footer, landing hero and feature cards, the login
- * and registration panels and the dashboard counters. Medical data, forms, inputs, tables, alerts
- * and upload controls always sit on solid surfaces. Every glass surface falls back to a solid one
- * without backdrop-filter support, with reduced transparency or more contrast, and in forced colours.
+ * Visual system: navy and teal with "glass" (translucent, blurred) surfaces. The rule is: the
+ * surfaces are glass, the data stays crisp. Glass frames the header, footer, landing hero and feature
+ * cards, the login and registration panels and every dashboard panel; text, figures and chart marks
+ * on it are solid colours. Forms, inputs, record tables, alerts and upload controls stay on solid
+ * surfaces.
+ *
+ * Glass is built only from the --glass-* tokens, in two layers:
+ *   - material tokens (--glass-tint*, --glass-solid*, borders, edges, shadows), which a theme may
+ *     reassign: the dashboard theme below turns them into midnight-navy glass;
+ *   - in-use tokens (--glass-bg*, --glass-blur), which only the fallbacks at the end switch: solid
+ *     surfaces and no blur without backdrop-filter support, with reduced transparency or more
+ *     contrast, and in forced colours.
  * Contrast ratios below are WCAG ratios against white unless stated otherwise.
  */
 
@@ -16,7 +23,9 @@
   --color-primary-soft: #e6f2f6;
   --color-accent: #5eead4;         /* decorative; as text only on navy (8.1:1 on --color-navy-soft) */
   --color-on-dark-muted: #cfe3ee;  /* 9.1:1 on --color-navy-soft */
+  --color-ink: #1d2939;            /* dark text on light fills in every theme (banner): 13.6:1 on it */
   --color-text: #1d2939;           /* 14.7:1 */
+  --color-heading: var(--color-navy);
   --color-muted: #475467;          /* 7.7:1; 6.7:1 on the palest glass tint */
   --color-bg: #f4f8fb;
   --color-surface: #ffffff;
@@ -29,19 +38,48 @@
   --color-success-soft: #ecfdf3;
   --color-focus: #0b1f33;          /* 16.7:1 on white, 15.6:1 on the page background */
   --color-focus-on-dark: #5eead4;
+  --color-emphasis: var(--color-primary);             /* links, eyebrows, the main button */
+  --color-emphasis-strong: var(--color-primary-dark); /* their hover state */
+  --color-on-emphasis: #ffffff;                       /* text on an emphasis fill */
+  --color-selected-bg: var(--color-primary-soft);     /* hovered row, current nav item */
+  --color-selected-text: var(--color-primary-dark);
   --color-banner: #fff6d6;
   --color-data-1: #0b5f7a;         /* chart marks: 7.2:1 on white */
   --color-data-2: #0e7c86;         /* 4.9:1 on white */
   --color-data-3: #2a9d8f;         /* 3.3:1 on white, 3.0:1 on --color-data-track (marks need 3:1) */
   --color-data-track: #eef5f8;     /* decorative track behind chart marks */
-  --radius: 10px;                  /* controls */
+  --chart-grid: rgba(11, 31, 51, 0.08); /* decorative gridlines; values are always printed */
+  --page-bg: var(--color-bg);
+  --page-glow:
+    radial-gradient(40rem 28rem at 8% -4%, rgba(20, 184, 166, 0.16), transparent 70%),
+    radial-gradient(36rem 26rem at 96% 6%, rgba(11, 95, 122, 0.14), transparent 70%),
+    radial-gradient(44rem 30rem at 50% 108%, rgba(15, 58, 82, 0.1), transparent 70%);
+  --radius: 10px;                  /* controls, and rows inside panels */
   --radius-surface: 14px;          /* cards and panels */
   --shadow: 0 1px 2px rgba(11, 31, 51, 0.06), 0 4px 12px rgba(11, 31, 51, 0.06);
   --shadow-raised: 0 1px 2px rgba(11, 31, 51, 0.08), 0 12px 32px rgba(11, 31, 51, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.72);
+
+  /* Glass material. Three surface levels: quiet (header, footer, page header), standard (panels)
+     and raised (the patient summary), each with the solid colour it falls back to. */
+  --glass-tint: rgba(255, 255, 255, 0.72);       /* muted text 6.7:1 on it */
+  --glass-tint-quiet: rgba(255, 255, 255, 0.72);
+  --glass-tint-raised: var(--color-navy-soft);   /* the summary is solid navy on the light theme */
+  --glass-solid: var(--color-surface);
+  --glass-solid-quiet: var(--color-surface);
+  --glass-solid-raised: var(--color-navy-soft);
   --glass-border: rgba(255, 255, 255, 0.7);
-  --glass-edge: rgba(11, 31, 51, 0.08);
+  --glass-edge: rgba(11, 31, 51, 0.08);          /* hairline around and between glass surfaces */
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-highlight-raised: inset 0 1px 0 rgba(255, 255, 255, 0.1); /* on the navy summary */
+  --glass-edge-lit: rgba(94, 234, 212, 0.3);     /* the summary's illuminated rim */
+  --glass-edge-lit-strong: rgba(94, 234, 212, 0.7);
+  --glass-glow: rgba(94, 234, 212, 0.1);         /* soft light inside the summary */
+  --glass-inset: rgba(11, 95, 122, 0.04);        /* rows and chart wells inside a panel */
+
+  /* Glass in use: switched to solid, unblurred surfaces by the fallbacks at the end only. */
+  --glass-bg: var(--glass-tint);
+  --glass-bg-quiet: var(--glass-tint-quiet);
+  --glass-bg-raised: var(--glass-tint-raised);
   --glass-blur: blur(14px) saturate(150%);
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -53,6 +91,51 @@
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Dashboard theme: midnight-navy glass. It only reassigns tokens (never --glass-bg* or --glass-blur,
+ * so the fallbacks still win), and browsers without :has() keep the light theme above, which is
+ * complete on its own. Ratios are against the worst case: each surface composited over the brightest
+ * point of the atmosphere (#0a4751), and over a blurred teal button for the header.
+ *   text #e8f0f5: 10.7:1 on a panel, 8.3:1 on a hovered row; headings #fff 12.3:1
+ *   muted #a9bfce: 6.5:1 on a panel, 5.0:1 on a hovered row, 7.5:1 under the header
+ *   emphasis #5eead4: 8.3:1 on a panel, 6.5:1 on a hovered row; #06202b on it 11.4:1
+ *   summary text (--color-on-dark-muted) 6.9:1 at the brightest point of its inner glow
+ *   chart marks against the track: data-1 6.2:1, data-2 4.9:1, data-3 7.2:1 (marks need 3:1)
+ *   solid fallbacks: text 13.1:1, muted 7.9:1; control border #7f99ad 5.1:1 on #10283d */
+:root:has(main.dashboard) {
+  color-scheme: dark;
+  --page-bg: #06182a;
+  --page-glow:
+    radial-gradient(48rem 32rem at 0% -10%, rgba(20, 184, 166, 0.18), transparent 70%),
+    radial-gradient(40rem 30rem at 100% 0%, rgba(14, 124, 134, 0.22), transparent 70%),
+    radial-gradient(56rem 36rem at 50% 115%, rgba(11, 95, 122, 0.2), transparent 70%);
+  --color-heading: #ffffff;
+  --color-text: #e8f0f5;
+  --color-muted: #a9bfce;
+  --color-border: rgba(255, 255, 255, 0.16);
+  --color-control-border: #7f99ad;
+  --color-focus: var(--color-focus-on-dark);
+  --color-emphasis: #5eead4;
+  --color-emphasis-strong: #99f6e4;
+  --color-on-emphasis: #06202b;
+  --color-selected-bg: rgba(94, 234, 212, 0.1);
+  --color-selected-text: #99f6e4;
+  --color-data-1: #5eead4;
+  --color-data-2: #2dd4bf;
+  --color-data-3: #99f6e4;
+  --color-data-track: rgba(255, 255, 255, 0.1);
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --shadow-raised: 0 1px 1px rgba(0, 0, 0, 0.24), 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+  --glass-tint: rgba(18, 46, 70, 0.56);
+  --glass-tint-quiet: rgba(6, 24, 42, 0.72);
+  --glass-tint-raised: rgba(15, 58, 82, 0.74);
+  --glass-solid: #10283d;
+  --glass-solid-quiet: #0a1d30;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-edge: rgba(255, 255, 255, 0.06);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-inset: rgba(255, 255, 255, 0.04);
+}
+
 *,
 *::before,
 *::after {
@@ -61,7 +144,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  background: var(--color-bg);
+  background: var(--page-bg);
 }
 
 body {
@@ -85,11 +168,7 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(40rem 28rem at 8% -4%, rgba(20, 184, 166, 0.16), transparent 70%),
-    radial-gradient(36rem 26rem at 96% 6%, rgba(11, 95, 122, 0.14), transparent 70%),
-    radial-gradient(44rem 30rem at 50% 108%, rgba(15, 58, 82, 0.1), transparent 70%),
-    var(--color-bg);
+  background: var(--page-glow), var(--page-bg);
 }
 
 main {
@@ -104,7 +183,7 @@ main:focus {
 h1, h2, h3 {
   line-height: 1.25;
   margin: 0 0 0.75rem;
-  color: var(--color-navy);
+  color: var(--color-heading);
   letter-spacing: -0.01em;
 }
 
@@ -117,12 +196,12 @@ p {
 }
 
 a {
-  color: var(--color-primary);
+  color: var(--color-emphasis);
   text-underline-offset: 0.15em;
 }
 
 a:hover {
-  color: var(--color-primary-dark);
+  color: var(--color-emphasis-strong);
 }
 
 :focus-visible {
@@ -151,7 +230,7 @@ a:hover {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-emphasis);
 }
 
 /* ---------- Skip link & banner ---------- */
@@ -177,6 +256,7 @@ a:hover {
   padding: 0.4rem 1rem;
   font-size: 0.875rem;
   text-align: center;
+  color: var(--color-ink);
   background: var(--color-banner);
   border-bottom: 1px solid #f0d77a;
 }
@@ -184,7 +264,7 @@ a:hover {
 /* ---------- Header & navigation (glass) ---------- */
 
 .site-header {
-  background: var(--glass-bg);
+  background: var(--glass-bg-quiet);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--glass-edge);
@@ -207,22 +287,22 @@ a:hover {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--color-navy);
+  color: var(--color-heading);
   text-decoration: none;
 }
 
 .brand:hover {
-  color: var(--color-navy);
+  color: var(--color-heading);
 }
 
 .brand-mark {
   width: 1.75rem;
   height: 1.75rem;
-  fill: var(--color-primary);
+  fill: var(--color-emphasis);
 }
 
 .brand-mark .brand-cross {
-  fill: #ffffff;
+  fill: var(--color-on-emphasis);
 }
 
 .nav-list {
@@ -249,15 +329,15 @@ a:hover {
 
 .nav-list a:not(.button):hover,
 .link-button:hover {
-  color: var(--color-primary-dark);
-  background: var(--color-primary-soft);
+  color: var(--color-selected-text);
+  background: var(--color-selected-bg);
   text-decoration: underline;
 }
 
 /* The current page: a pill plus an underline, so it never depends on colour alone. */
 .nav-list a[aria-current="page"]:not(.button) {
-  color: var(--color-primary-dark);
-  background: var(--color-primary-soft);
+  color: var(--color-selected-text);
+  background: var(--color-selected-bg);
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
@@ -289,9 +369,9 @@ a:hover {
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
-  color: #ffffff;
-  background: var(--color-primary);
-  border: 2px solid var(--color-primary);
+  color: var(--color-on-emphasis);
+  background: var(--color-emphasis);
+  border: 2px solid var(--color-emphasis);
   border-radius: var(--radius);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(11, 31, 51, 0.16);
   cursor: pointer;
@@ -299,9 +379,9 @@ a:hover {
 }
 
 .button:hover {
-  color: #ffffff;
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  color: var(--color-on-emphasis);
+  background: var(--color-emphasis-strong);
+  border-color: var(--color-emphasis-strong);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 12px rgba(11, 31, 51, 0.18);
 }
 
@@ -446,20 +526,14 @@ a:hover {
   margin-bottom: 0;
 }
 
-/* Glass cards: the landing page's feature cards and the dashboard counters. */
+/* Glass cards: the landing page's feature cards and every dashboard panel. */
 .hero ~ .section .card,
-.card-stat {
+.dash-grid .card {
   background: var(--glass-bg);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-color: var(--glass-border);
   box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-edge), var(--shadow-raised);
-}
-
-.card-stat {
-  border-top: 3px solid var(--color-primary);
-  /* Size to the counter, not to the tallest card in the row (the "Recently added" list). */
-  align-self: start;
 }
 
 .steps {
@@ -654,7 +728,7 @@ a:hover {
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: var(--color-primary);
+  color: var(--color-heading);
 }
 
 .empty-state {
@@ -672,6 +746,11 @@ a:hover {
 /* Inside a card (the dashboard's "Recently added"), the empty state is a little more compact. */
 .card .empty-state {
   padding: var(--space-lg) var(--space-md);
+}
+
+/* Inside a glass dashboard panel it is a recessed well rather than a white box. */
+.dash-grid .empty-state {
+  background: var(--glass-inset);
 }
 
 .record-list {
@@ -720,7 +799,7 @@ a:hover {
   padding: 0.35rem 0;
 }
 
-/* Teal bars on a pale track instead of the browser's default green. The bars are decorative
+/* Teal bars on a quiet track instead of the browser's default green. The bars are decorative
    (aria-hidden); the count is always shown as text next to them. */
 .type-counts meter,
 .storage-meter {
@@ -729,15 +808,15 @@ a:hover {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background: var(--color-primary-soft);
-  border: 1px solid rgba(11, 95, 122, 0.25);
+  background: var(--color-data-track);
+  border: 1px solid var(--color-border);
   border-radius: 999px;
 }
 
 .type-counts meter::-webkit-meter-bar,
 .storage-meter::-webkit-meter-bar {
   height: 0.6rem;
-  background: var(--color-primary-soft);
+  background: var(--color-data-track);
   border: 0;
   border-radius: 999px;
 }
@@ -748,13 +827,13 @@ a:hover {
 .storage-meter::-webkit-meter-optimum-value,
 .storage-meter::-webkit-meter-suboptimum-value,
 .storage-meter::-webkit-meter-even-less-good-value {
-  background: var(--color-primary);
+  background: var(--color-data-1);
   border-radius: 999px;
 }
 
 .type-counts meter::-moz-meter-bar,
 .storage-meter::-moz-meter-bar {
-  background: var(--color-primary);
+  background: var(--color-data-1);
   border-radius: 999px;
 }
 
@@ -830,6 +909,18 @@ a:hover {
   margin: 0;
 }
 
+/* The greeting sits on a quiet glass band: the first level of the surface hierarchy
+   (quiet band, standard panels, raised summary). */
+.dashboard > .page-header {
+  padding: var(--space-lg);
+  background: var(--glass-bg-quiet);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--glass-highlight);
+}
+
 /* A long unbroken name in the greeting wraps instead of widening the page. */
 .dashboard .page-header-actions > div {
   min-width: 0;
@@ -866,12 +957,9 @@ a:hover {
 }
 
 .dash-grid .card {
+  position: relative; /* anchors the lit top edges below */
   display: flex;
   flex-direction: column;
-}
-
-.dash-grid .card-stat {
-  align-self: stretch;
 }
 
 .card-label {
@@ -919,11 +1007,41 @@ a:hover {
   color: var(--color-muted);
 }
 
-/* Patient summary: the one navy surface on the page. Text colours are documented on their tokens. */
-.summary-card {
+/* Lit top edges: a fading teal line on each stat card (one accent per card) and a centred one on the
+   summary. Decorative only; every card also has its heading. */
+.stat-records { --stat-accent: var(--color-data-1); }
+.stat-documents { --stat-accent: var(--color-data-2); }
+.stat-latest { --stat-accent: var(--color-data-3); }
+
+.stat-card::before,
+.dash-grid > .summary-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: var(--radius-surface);
+  right: var(--radius-surface);
+  height: 2px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.stat-card::before {
+  right: 40%;
+  background: linear-gradient(90deg, var(--stat-accent), transparent);
+}
+
+.dash-grid > .summary-card::before {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-edge-lit-strong), transparent);
+}
+
+/* Patient summary: the raised, navy glass panel with an illuminated rim and a soft inner light.
+   Text colours are documented on their tokens and in the dashboard theme. */
+.dash-grid > .summary-card {
   color: #ffffff;
-  background: var(--color-navy-soft);
-  border-color: var(--color-navy);
+  background: radial-gradient(28rem 18rem at 100% 0%, var(--glass-glow), transparent 70%), var(--glass-bg-raised);
+  border-color: var(--glass-edge-lit);
+  box-shadow: var(--glass-highlight-raised), 0 0 0 1px var(--glass-edge-lit), var(--shadow-raised);
 }
 
 .summary-card .card-label,
@@ -1017,7 +1135,7 @@ a:hover {
 .ring-value {
   font-size: 24px;
   font-weight: 700;
-  fill: var(--color-navy);
+  fill: var(--color-heading);
 }
 
 .ring-legend {
@@ -1032,8 +1150,42 @@ a:hover {
   grid-template-columns: 0.75rem minmax(0, 1fr) auto;
   gap: var(--space-sm);
   align-items: center;
-  padding-block: 0.3rem;
   font-size: 0.9rem;
+}
+
+/* Rows inside dashboard panels: recessed glass strips with a hairline, so lists read as one surface.
+   Rows with links light up on hover and when a link inside has focus (the link keeps its outline). */
+.ring-legend li,
+.dash-grid .type-counts li,
+.dash-grid .record-list li {
+  margin-bottom: 0.375rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--glass-inset);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+}
+
+.ring-legend li:last-child,
+.dash-grid .type-counts li:last-child,
+.dash-grid .record-list li:last-child {
+  margin-bottom: 0;
+}
+
+.dash-grid .record-list li {
+  padding-block: 0.55rem;
+}
+
+.dash-grid .type-counts li,
+.dash-grid .record-list li {
+  transition: background-color var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+}
+
+.dash-grid .type-counts li:hover,
+.dash-grid .type-counts li:focus-within,
+.dash-grid .record-list li:hover,
+.dash-grid .record-list li:focus-within {
+  background: var(--color-selected-bg);
+  border-color: var(--glass-border);
 }
 
 .legend-swatch {
@@ -1056,11 +1208,23 @@ a:hover {
   color: var(--color-muted);
 }
 
-/* Weekly histogram: bars and labels are drawn in a 320 x 150 viewBox that scales with the card. */
+/* Weekly histogram: bars and labels are drawn in a 320 x 150 viewBox that scales with the card,
+   inside a recessed glass well. Gridlines mark quarters of the busiest week; every bar's count is
+   printed above it, and the hidden table carries the same values. */
 .histogram {
   display: block;
   width: 100%;
   height: auto;
+  padding: var(--space-sm) var(--space-sm) 0;
+  background: var(--glass-inset);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+}
+
+.histogram-grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
 }
 
 .histogram-axis {
@@ -1079,7 +1243,7 @@ a:hover {
 }
 
 .histogram-label {
-  font-size: 11px;
+  font-size: 12px;
   fill: var(--color-muted);
 }
 
@@ -1330,7 +1494,7 @@ a:hover {
 .site-footer {
   padding-block: 1.5rem;
   font-size: 0.9rem;
-  background: var(--glass-bg);
+  background: var(--glass-bg-quiet);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--glass-edge);
@@ -1401,15 +1565,16 @@ a:hover {
   }
 }
 
-/* ---------- Fallbacks: solid surfaces wherever glass is unavailable or unwanted ---------- */
+/* ---------- Fallbacks: solid surfaces wherever glass is unavailable or unwanted ----------
+ * Every glass surface reads --glass-bg* and --glass-blur, so switching those tokens here turns all of
+ * them solid at once, in the light theme and in the dashboard theme (each has its own solid colours).
+ * The hero panel is the one glass surface with its own tint. */
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .site-header,
-  .site-footer,
-  .hero ~ .section .card,
-  .card-stat,
-  .auth-page .form {
-    background: var(--color-surface);
+  :root {
+    --glass-bg: var(--glass-solid);
+    --glass-bg-quiet: var(--glass-solid-quiet);
+    --glass-bg-raised: var(--glass-solid-raised);
   }
 
   .hero-inner {
@@ -1418,24 +1583,19 @@ a:hover {
 }
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .site-header,
-  .site-footer,
-  .hero ~ .section .card,
-  .card-stat,
-  .auth-page .form {
-    background: var(--color-surface);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+  :root {
+    --glass-bg: var(--glass-solid);
+    --glass-bg-quiet: var(--glass-solid-quiet);
+    --glass-bg-raised: var(--glass-solid-raised);
+    --glass-blur: none;
   }
 
   .hero-inner {
     background: var(--color-navy-soft);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 
   body::before {
-    background: var(--color-bg);
+    background: var(--page-bg);
   }
 }
 
@@ -1443,6 +1603,9 @@ a:hover {
   .site-header,
   .site-footer,
   .card,
+  .dash-grid .card,
+  .dash-grid > .summary-card,
+  .dashboard > .page-header,
   .form,
   .table,
   .details,
@@ -1453,33 +1616,46 @@ a:hover {
   .histogram-axis {
     stroke: var(--color-control-border);
   }
+
+  .histogram-grid {
+    stroke: var(--color-border);
+  }
 }
 
 @media (forced-colors: active) {
-  body::before {
+  :root {
+    --glass-blur: none;
+  }
+
+  body::before,
+  .stat-card::before,
+  .dash-grid > .summary-card::before {
     display: none;
   }
 
   .site-header,
   .site-footer,
   .card,
+  .dashboard > .page-header,
   .form,
   .table,
   .details,
   .documents,
   .hero-inner {
     border: 1px solid CanvasText;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 
   .button {
     border: 2px solid ButtonText;
   }
 
-  .summary-card {
+  .dash-grid > .summary-card {
     color: CanvasText;
     background: Canvas;
+  }
+
+  .histogram-grid {
+    stroke: GrayText;
   }
 
   .ring-track {

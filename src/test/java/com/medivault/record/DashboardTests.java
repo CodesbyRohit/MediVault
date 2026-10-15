@@ -343,6 +343,25 @@ class DashboardTests extends IntegrationTestSupport {
 					not(containsString("You don't have any medical records yet.")))));
 	}
 
+	/** The glass theme in main.css keys on main.dashboard; the stat cards and chart need these hooks. */
+	@Test
+	void thePageCarriesTheHooksTheGlassThemeStylesByClassOnly() throws Exception {
+		User asha = createPatient("Asha Fictional", "asha@example.test");
+		createRecord(asha, "Asha lipid profile");
+
+		String html = mockMvc.perform(get("/dashboard").with(user(principal(asha))))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		assertThat(html).contains("<main id=\"main-content\" tabindex=\"-1\" class=\"container dashboard\"",
+				"class=\"card stat-card stat-records\"", "class=\"card stat-card stat-documents\"",
+				"class=\"card stat-card stat-latest\"", "class=\"card summary-card\"")
+			.doesNotContain("style=");
+		assertThat(html.split("class=\"histogram-grid\"", -1)).as("histogram grid lines + 1").hasSize(5);
+	}
+
 	@Test
 	void theEmptyDashboardHasNoChartsOrInventedFigures() throws Exception {
 		User asha = createPatient("Asha Fictional", "asha@example.test");

@@ -17,7 +17,7 @@
     </div>
 
     <div class="dash-grid">
-        <section class="card card-stat stat-card" aria-labelledby="count-title">
+        <section class="card stat-card stat-records" aria-labelledby="count-title">
             <h2 id="count-title" class="card-label">Records stored</h2>
             <p class="stat"><span th:text="${recordCount}">0</span> <span class="stat-unit"
                     th:text="${recordCount == 1} ? 'record' : 'records'">records</span></p>
@@ -28,7 +28,7 @@
             <p class="stat-source">Source: your saved records</p>
         </section>
 
-        <section class="card card-stat stat-card" aria-labelledby="documents-title">
+        <section class="card stat-card stat-documents" aria-labelledby="documents-title">
             <h2 id="documents-title" class="card-label">Documents</h2>
             <p class="stat"><span th:text="${storage.documentCount}">0</span> <span class="stat-unit"
                     th:text="${storage.documentCount == 1} ? 'PDF' : 'PDFs'">PDFs</span></p>
@@ -43,7 +43,7 @@
             <p class="stat-source">Source: your attached PDFs (original file sizes)</p>
         </section>
 
-        <section class="card card-stat stat-card" aria-labelledby="latest-title">
+        <section class="card stat-card stat-latest" aria-labelledby="latest-title">
             <h2 id="latest-title" class="card-label">Latest record</h2>
             <th:block th:if="${insights.latestRecord != null}">
                 <p class="stat stat-date"><time th:datetime="${insights.latestRecord.recordDate}"
@@ -135,6 +135,10 @@
         <section class="card weekly-card" th:if="${hasRecords}" aria-labelledby="weekly-title">
             <h2 id="weekly-title" class="card-label">Records added per week</h2>
             <svg class="histogram" viewBox="0 0 320 150" aria-hidden="true" focusable="false">
+                <line class="histogram-grid" x1="0" y1="20.5" x2="320" y2="20.5"></line>
+                <line class="histogram-grid" x1="0" y1="45.5" x2="320" y2="45.5"></line>
+                <line class="histogram-grid" x1="0" y1="70.5" x2="320" y2="70.5"></line>
+                <line class="histogram-grid" x1="0" y1="95.5" x2="320" y2="95.5"></line>
                 <line class="histogram-axis" x1="0" y1="120.5" x2="320" y2="120.5"></line>
                 <g th:each="week, weekStat : ${insights.weeks}">
                     <rect class="histogram-bar" width="24" rx="3"

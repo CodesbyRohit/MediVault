@@ -181,7 +181,18 @@ Refine, don't replace, the `:root` tokens in `static/css/main.css`.
   `--color-data-track: #eef5f8` (decorative; the lightest fill still reaches ≈3.0:1 against it).
   Marks meet 3:1; text stays on existing text tokens.
   Contrast values are computed with the WCAG formula during implementation and written beside each token.
-- Surfaces: neutral backgrounds, 1px hairline borders, existing translucent glass on stat cards only.
+- Surfaces (design correction, 2026-10-15): glassmorphism is a core requirement. Principle: the
+  surfaces are glass, the data stays crisp. The dashboard uses a midnight-navy theme
+  (`:root:has(main.dashboard)`, token reassignment only; browsers without `:has()` keep the light
+  glass theme) with teal atmospheric gradients and three glass levels: quiet (site header, footer,
+  greeting band), standard (every panel) and raised (patient summary, with an illuminated teal rim
+  and soft inner light). Stat cards carry one teal accent edge each; lists, legend and category rows
+  are recessed glass strips with restrained hover/focus-within states; the histogram sits in a glass
+  well with dashed quarter gridlines. Glass is built only from `--glass-*` tokens in two layers:
+  material tokens (themes reassign them) and in-use tokens `--glass-bg*`/`--glass-blur` (only the
+  fallbacks switch them to solid, unblurred surfaces: no backdrop-filter support, reduced
+  transparency, more contrast, forced colours). Worst-case contrast for each text token is written
+  above the theme in `main.css`. Pinned by `GlassDesignSystemTests`.
 - Type: existing system font stack; card titles 1rem semibold; stat 2.25rem; captions 0.8125rem;
   `font-variant-numeric: tabular-nums` on all figures.
 - Spacing: existing `--space-*` scale; one card padding and `--radius-surface`.
@@ -227,6 +238,9 @@ Run only after approval:
   patient's records, PDFs, providers, types, latest record and weekly activity never count; latest
   record and last added follow the tie-break order; a new patient gets empty insights and the
   unchanged empty-state page; the page shows the configured limit and server zone id.
+- `GlassDesignSystemTests` (stylesheet: one blur token, token-only dashboard theme, glass on every
+  major panel, solid fallbacks, forced colours) and `DashboardTests` (theme and accent hooks, four
+  histogram gridlines, no style attributes).
 - Existing `TemplateCspComplianceTests` and the full `.\mvnw.cmd test` suite pass.
 - Visual check in offline headless Chrome (dead proxy, resolver block, 1 s connection monitor) at
   1440, 900 and 390 px widths, empty and populated fictional patients.
